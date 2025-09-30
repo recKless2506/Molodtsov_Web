@@ -4,6 +4,7 @@ import (
 	"Project/internal/app/handler"
 	"Project/internal/app/repository"
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -23,14 +24,16 @@ func StartServer() {
 	r.LoadHTMLGlob("templates/*")
 	r.Static("/static", "./resources")
 
+	// Главная страница редирект на /hello
+	r.GET("/", func(c *gin.Context) {
+		c.Redirect(http.StatusTemporaryRedirect, "/hello")
+	})
+
 	// Основные маршруты
-	r.GET("/", h.GetCatalog)            // главная страница
-	r.GET("/hello", h.GetCatalog)       // старый маршрут для совместимости
+	r.GET("/hello", h.GetCatalog)       // главная страница с каталогом
 	r.GET("/product/:id", h.GetProduct) // страница товара
+	r.GET("/zayavka", h.GetZayavka)     // страница заявки с карточками
 
-	// Новый маршрут заявки (с карточками котлов)
-	r.GET("/zayavka", h.GetZayavka)
-
-	r.Run()
+	r.Run(":8080")
 	log.Println("Server down")
 }

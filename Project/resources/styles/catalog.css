@@ -4,14 +4,7 @@ body, html {
   padding: 0;
   font-family: Inter, sans-serif;
   background: white;
-  overflow-x: hidden; /* убираем горизонтальную прокрутку */
-}
-
-/* Контейнер */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  overflow-x: hidden;
 }
 
 /* Хедер */
@@ -21,31 +14,48 @@ body, html {
   background: #0567B7;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 0 20px;
   box-sizing: border-box;
 }
 
 .header-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   width: 100%;
 }
 
+/* Логотип */
 .logo svg {
   width: 58px;
   height: 58px;
   cursor: pointer;
 }
 
+/* Контейнер поиска и корзины */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 0 20px;
+}
+
+/* Корзина */
+/* Корзина */
+.cart-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-left: 15px; /* добавлен отступ слева, чтобы корзина отодвинулась от поиска */
+}
+
+
 .cart-icon {
   position: relative;
-  width: 73px;
-  height: 73px;
   display: flex;
   align-items: center;
-  justify-content: center;
   cursor: pointer;
 }
 
@@ -61,7 +71,7 @@ body, html {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #FF0000;
+  background: red;
   color: white;
   font-size: 15px;
   display: flex;
@@ -71,11 +81,7 @@ body, html {
 
 /* Поиск */
 .search-bar {
-  margin: 20px auto;
-  width: 100%;
-  max-width: 1200px;
-  display: flex;
-  justify-content: center;
+  flex: 1;
 }
 
 .search-form {
@@ -121,8 +127,8 @@ body, html {
   overflow: hidden;
   color: white;
   transition: transform 0.2s;
-  width: 270px;   /* ширина карточки */
-  height: 320px;  /* высота карточки */
+  width: 270px;
+  height: 320px;
   flex-shrink: 0;
 }
 
@@ -160,7 +166,6 @@ body, html {
   text-align: center;
 }
 
-/* Кнопка Подробнее по центру снизу */
 .product-button {
   width: 80px;
   height: 25px;
@@ -205,3 +210,4 @@ body, html {
     font-size: 11px;
   }
 }
+
