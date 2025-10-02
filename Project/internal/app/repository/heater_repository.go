@@ -42,6 +42,7 @@ func (r *Repository) GetHeaterProductByID(id uint) (*ds.HeatersProduct, error) {
 	return &product, nil
 }
 
+// Получаем все заявки
 func (r *Repository) GetAllRequests() ([]ds.HeatersProductRequest, error) {
 	var requests []ds.HeatersProductRequest
 	if err := r.db.Preload("Products.Product").
@@ -57,4 +58,15 @@ func (r *Repository) ClearRequests() error {
 	return r.db.Model(&ds.HeatersProductRequest{}).
 		Where("status = ?", "черновик").
 		Update("status", "удален").Error
+}
+
+// 🔥 Подсчёт заявок (для корзины)
+func (r *Repository) GetRequestsCount() (int64, error) {
+	var count int64
+	if err := r.db.Model(&ds.HeatersProductRequest{}).
+		Where("status != ?", "удален").
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }

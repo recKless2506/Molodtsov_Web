@@ -18,7 +18,7 @@ func NewHandler(r *repository.Repository) *Handler {
 	return &Handler{Repository: r}
 }
 
-// Список товаров
+// Список товаров (каталог)
 func (h *Handler) GetCatalog(ctx *gin.Context) {
 	products, err := h.Repository.GetHeaterProducts()
 	if err != nil {
@@ -27,8 +27,16 @@ func (h *Handler) GetCatalog(ctx *gin.Context) {
 		return
 	}
 
+	// 🔥 получаем количество заявок (корзины)
+	count, err := h.Repository.GetRequestsCount()
+	if err != nil {
+		log.Println("Ошибка получения количества заявок:", err)
+		count = 0
+	}
+
 	ctx.HTML(http.StatusOK, "catalog.html", gin.H{
-		"products": products,
+		"products":   products,
+		"cart_count": count,
 	})
 }
 
