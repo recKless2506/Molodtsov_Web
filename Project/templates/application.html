@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Заявка</title>
+  <title>Заявки</title>
   <link rel="stylesheet" href="/static/styles/application.css">
 </head>
 <body>
@@ -16,7 +16,7 @@
           </g>
           <defs>
             <clipPath id="clip0_7_68">
-              <rect width="57.6862" height="57.6862" fill="white" transform="translate(0 0.00598145)"/>
+              <rect width="57.6862" height="57.6862" fill="white"/>
             </clipPath>
           </defs>
         </svg>
@@ -25,43 +25,44 @@
   </header>
 
   <div class="page-container">
-    <!-- Верхние поля ввода -->
-    <div class="input-container">
-      <div class="input-block">
-        <div class="input-label">Площадь помещения</div>
-        <input type="text" class="input-field" value="{{.inputDefaults.Area}}" placeholder="м²">
+    {{range .requests}}
+      <!-- Верхние поля заявки (один раз) -->
+      <div class="input-container">
+        <div class="input-block">
+          <div class="input-label">Площадь помещения</div>
+          <input type="text" class="input-field" value="{{.PlaceSquare}}" readonly>
+        </div>
+        <div class="input-block">
+          <div class="input-label">Температура за помещением</div>
+          <input type="text" class="input-field" value="{{.OutsideTemperature}}" readonly>
+        </div>
+        <div class="input-block">
+          <div class="input-label">Температура в помещении</div>
+          <input type="text" class="input-field" value="{{.InsideTemperature}}" readonly>
+        </div>
       </div>
-      <div class="input-block">
-        <div class="input-label">Температура за помещением</div>
-        <input type="text" class="input-field" value="{{.inputDefaults.TempOutside}}" placeholder="°C">
-      </div>
-      <div class="input-block">
-        <div class="input-label">Температура в помещении</div>
-        <input type="text" class="input-field" value="{{.inputDefaults.TempInside}}" placeholder="°C">
-      </div>
-    </div>
 
-    <!-- Карточки товаров -->
-    <div class="cards-container">
-      {{range .products}}
-        <div class="card">
-          <img src="{{.Product.ImageURL}}" alt="{{.Product.Title}}" class="card-img">
-
-          <div class="card-text-row">
-            <div class="card-text-block block-title">{{.Product.Title}}</div>
-            <div class="card-divider"></div>
-            <div class="card-text-block block-specs">{{.Product.Specs}}</div>
-            <div class="card-divider"></div>
-            <div class="card-text-block block-input">
-              <div class="input-label">Объём носителя</div>
-              <input type="text" class="card-input" value="{{.Defaults.CarrierVol}}" placeholder="л">
+      <!-- Карточки товаров заявки -->
+      <div class="cards-container">
+        {{range .Products}}
+          <div class="card">
+            <img src="{{.Product.Image}}" alt="{{.Product.Title}}" class="card-img">
+            <div class="card-text-row">
+              <div class="card-text-block block-title">{{.Product.Title}}</div>
+              <div class="card-divider"></div>
+              <div class="card-text-block block-specs">{{.Product.Power}}</div>
+              <div class="card-divider"></div>
+              <div class="card-text-block block-input">
+                <div class="input-label">Объём носителя</div>
+                <input type="text" class="card-input" value="{{$.CarrierVolume}}" readonly style="color: #000;">
+              </div>
             </div>
           </div>
+        {{end}}
+      </div>
 
-          <div class="card-result">Результат: {{.Defaults.Result}}</div>
-        </div>
-      {{end}}
-    </div>
+      <hr style="margin:30px 0; border-color:#ccc;">
+    {{end}}
   </div>
 </body>
 </html>

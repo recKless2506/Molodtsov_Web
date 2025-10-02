@@ -2,13 +2,11 @@ package handler
 
 import (
 	"Project/internal/app/repository"
+	"log"
 	"net/http"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
 type Handler struct {
@@ -16,56 +14,36 @@ type Handler struct {
 }
 
 func NewHandler(r *repository.Repository) *Handler {
-	return &Handler{
-		Repository: r,
-	}
+	return &Handler{Repository: r}
 }
 
+// Список товаров
 func (h *Handler) GetCatalog(ctx *gin.Context) {
-	var products []repository.Product
-	var err error
-
-	searchQuery := ctx.Query("query")
-	if searchQuery == "" {
-		products, err = h.Repository.GetProducts()
-		if err != nil {
-			logrus.Error(err)
-		}
-	} else {
-		products, err = h.Repository.GetProductsByTitle(searchQuery)
-		if err != nil {
-			logrus.Error(err)
-		}
+	products, err := h.Repository.GetHeaterProducts()
+	if err != nil {
+		log.Println("Ошибка получения продуктов:", err)
+		ctx.String(http.StatusInternalServerError, "Ошибка получения товаров")
+		return
 	}
 
 	ctx.HTML(http.StatusOK, "catalog.html", gin.H{
-		"time":     time.Now().Format("15:04:05"),
 		"products": products,
-		"query":    searchQuery,
 	})
 }
 
-func (h *Handler) GetProduct(ctx *gin.Context) {
-	idStr := ctx.Param("id")
-	id, err := strconv.Atoi(idStr)
+// Конкретный товар
+func (h *Handler) GetHeaterByID(ctx *gin.Context) {
+	idParam := ctx.Param("id")
+	id, err := strconv.Atoi(idParam)
 	if err != nil {
-		logrus.Error(err)
-		ctx.String(http.StatusBadRequest, "Некорректный ID")
+		ctx.String(http.StatusBadRequest, "Неверный ID товара")
 		return
 	}
 
-	product, err := h.Repository.GetProduct(id)
+	product, err := h.Repository.GetHeaterProductByID(uint(id))
 	if err != nil {
-		logrus.Error(err)
 		ctx.String(http.StatusNotFound, "Товар не найден")
 		return
-	}
-
-	if product.Description == "" {
-		product.Description = "Описание отсутствует"
-	}
-	if product.Specs == "" {
-		product.Specs = "Технические характеристики отсутствуют"
 	}
 
 	ctx.HTML(http.StatusOK, "heater.html", gin.H{
@@ -73,42 +51,15 @@ func (h *Handler) GetProduct(ctx *gin.Context) {
 	})
 }
 
-type ZayavkaItem struct {
-	Product  repository.Product
-	Defaults repository.ZayavkaDefaults
-}
-
-func (h *Handler) GetZayavka(ctx *gin.Context) {
-	products, err := h.Repository.GetProducts()
+// Страница с заявками (корзина)
+func (h *Handler) GetApplication(ctx *gin.Context) {
+	requests, err := h.Repository.GetAllRequests()
 	if err != nil {
-		ctx.String(http.StatusInternalServerError, "Ошибка получения товаров")
+		ctx.String(http.StatusInternalServerError, "Ошибка получения заявок")
 		return
 	}
 
-	defaults := h.Repository.GetZayavkaDefaults()
-
-	var items []ZayavkaItem
-	for _, p := range products {
-		if strings.Contains(p.Title, "Электрический котёл") || strings.Contains(p.Title, "Газовый котёл") {
-			d, ok := defaults[p.ID]
-			if !ok {
-				d = repository.ZayavkaDefaults{}
-			}
-			items = append(items, ZayavkaItem{
-				Product:  p,
-				Defaults: d,
-			})
-		}
-	}
-
-	var inputDefaults repository.ZayavkaDefaults
-	for _, v := range defaults {
-		inputDefaults = v
-		break
-	}
-
 	ctx.HTML(http.StatusOK, "application.html", gin.H{
-		"products":      items,
-		"inputDefaults": inputDefaults,
+		"requests": requests,
 	})
 }

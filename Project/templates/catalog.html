@@ -9,25 +9,23 @@
 <body>
   <!-- Хедер -->
   <header class="header">
-    <div class="header-container">
-      <div class="logo">
-        <a href="/hello">
-          <svg width="58" height="58" viewBox="0 0 58 58" xmlns="http://www.w3.org/2000/svg">
-            <g clip-path="url(#clip0)">
-              <path fill="white" d="M21.79 55.4667L21.7879 35.8916L34.2624 35.8903L34.2644 55.4654L49.8574 55.4638L49.8547 29.3637L59.2105 29.3627L28.0214 0.00324703L-3.16159 29.3692L6.19423 29.3682L6.19693 55.4683L21.79 55.4667Z"/>
-            </g>
-            <defs>
-              <clipPath id="clip0">
-                <rect width="57.6862" height="57.6862"/>
-              </clipPath>
-            </defs>
-          </svg>
-        </a>
-      </div>
+    <div class="logo">
+      <a href="/">
+        <svg width="58" height="58" viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g clip-path="url(#clip0)">
+            <path d="M21.79 55.4667L21.7879 35.8916L34.2624 35.8903L34.2644 55.4654L49.8574 55.4638L49.8547 29.3637L59.2105 29.3627L28.0214 0.00324703L-3.16159 29.3692L6.19423 29.3682L6.19693 55.4683L21.79 55.4667Z" fill="white"/>
+          </g>
+          <defs>
+            <clipPath id="clip0">
+              <rect width="57.6862" height="57.6862" fill="white"/>
+            </clipPath>
+          </defs>
+        </svg>
+      </a>
     </div>
   </header>
 
-  <!-- Поиск и корзина на одном уровне -->
+  <!-- Поиск и корзина -->
   <div class="top-bar">
     <div class="search-bar">
       <form method="GET" action="/hello" class="search-form">
@@ -37,9 +35,8 @@
     </div>
     <div class="cart-container">
       <a href="/zayavka" class="cart-icon">
-        <svg width="40" height="40" viewBox="0 0 61 61" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18.1813 3.12499L13.8621 9.78624L18.1813 16.5083H18.1509L12.098 25.9375L6.83587 23.2L11.155 16.4779L6.83587 9.78624L12.9192 0.357078L18.1813 3.12499ZM36.4313 2.79041L32.1121 9.51249L36.4313 16.2042L36.4009 16.2346L30.348 25.6333L25.0859 22.8958L29.405 16.2042L25.0859 9.51249L31.1692 0.0833282L36.4313 2.79041ZM54.8334 2.79041L50.4534 9.51249L54.8334 16.2042V16.2346L48.75 25.6333L43.4271 22.8958L47.7463 16.2042L43.4271 9.51249L49.5105 0.0833282L54.8334 2.79041ZM0.083374 60.9167V36.5833C0.083374 34.9699 0.724294 33.4226 1.86514 32.2818C3.00599 31.1409 4.55331 30.5 6.16671 30.5H54.8334C56.4468 30.5 57.9941 31.1409 59.1349 32.2818C60.2758 33.4226 60.9167 34.9699 60.9167 36.5833V60.9167H54.8334V54.8333H6.16671V60.9167H0.083374Z"
-          fill="#0567B7"/>
+        <svg viewBox="0 0 24 24">
+          <path d="M7 4h-2l-3 9v2h2l3-9zm0 11a2 2 0 1 0 4 0 2 2 0 0 0-4 0zm9-11h-6l-1 2h8v2h-8l1 2h6v2h-6l1 2h6v2h-6l1 2h6v2h-6v-2h-6v-2h6l-1-2h-6v-2h6l-1-2h-6v-2h6l-1-2h6v-2z"/>
         </svg>
         <div class="cart-count">2</div>
       </a>
@@ -48,14 +45,16 @@
 
   <!-- Каталог товаров -->
   <div class="products">
-    {{range $index, $product := .products}}
+    {{range .products}}
       <div class="product-card">
-        <img src="{{$product.ImageURL}}" alt="{{$product.Title}}">
+        <img src="{{.Image}}" alt="{{.Title}}">
         <div class="content">
-          <div class="product-title">{{$product.Title}}</div>
-          <div class="product-price">{{$product.Price}}</div>
+          <div class="product-title">{{.Title}}</div>
+          <div class="product-specs">{{.Efficiency}}</div>
+          <div style="margin-top:auto; width:100%; display:flex; justify-content:center;">
+            <a href="/heater/{{.ID}}" class="product-button">Подробнее</a>
+          </div>
         </div>
-        <a href="/product/{{$product.ID}}" class="product-button">Подробнее</a>
       </div>
     {{end}}
   </div>
