@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Заявка</title>
+  <link rel="stylesheet" href="/static/styles/application.css">
+</head>
+<body>
+  <header class="header">
+    <div class="logo">
+      <a href="/">
+        <svg width="58" height="58" viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g clip-path="url(#clip0_7_68)">
+            <path d="M21.79 55.4667L21.7879 35.8916L34.2624 35.8903L34.2644 55.4654L49.8574 55.4638L49.8547 29.3637L59.2105 29.3627L28.0214 0.00324703L-3.16159 29.3692L6.19423 29.3682L6.19693 55.4683L21.79 55.4667Z" fill="white"/>
+          </g>
+          <defs>
+            <clipPath id="clip0_7_68">
+              <rect width="57.6862" height="57.6862" fill="white" transform="translate(0 0.00598145)"/>
+            </clipPath>
+          </defs>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <div class="page-container">
+    <!-- Верхние поля ввода -->
+    <div class="input-container">
+      <div class="input-block">
+        <div class="input-label">Площадь помещения</div>
+        <input type="text" class="input-field" value="{{.inputDefaults.Area}}" placeholder="м²">
+      </div>
+      <div class="input-block">
+        <div class="input-label">Температура за помещением</div>
+        <input type="text" class="input-field" value="{{.inputDefaults.TempOutside}}" placeholder="°C">
+      </div>
+      <div class="input-block">
+        <div class="input-label">Температура в помещении</div>
+        <input type="text" class="input-field" value="{{.inputDefaults.TempInside}}" placeholder="°C">
+      </div>
+    </div>
+
+    <!-- Карточки товаров -->
+    <div class="cards-container">
+      {{range .products}}
+        <div class="card">
+          <img src="{{.Product.ImageURL}}" alt="{{.Product.Title}}" class="card-img">
+
+          <div class="card-text-row">
+            <div class="card-text-block block-title">{{.Product.Title}}</div>
+            <div class="card-divider"></div>
+            <div class="card-text-block block-specs">{{.Product.Specs}}</div>
+            <div class="card-divider"></div>
+            <div class="card-text-block block-input">
+              <div class="input-label">Объём носителя</div>
+              <input type="text" class="card-input" value="{{.Defaults.CarrierVol}}" placeholder="л">
+            </div>
+          </div>
+
+          <div class="card-result">Результат: {{.Defaults.Result}}</div>
+        </div>
+      {{end}}
+    </div>
+  </div>
+</body>
+</html>
