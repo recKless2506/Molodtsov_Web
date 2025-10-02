@@ -34,6 +34,6 @@ func StartServer() {
 	r.GET("/product/:id", h.GetProduct) // страница товара
 	r.GET("/zayavka", h.GetZayavka)     // страница заявки с карточками
 
-	r.Run(":8080")
+	r.Run(":8001")
 	log.Println("Server down")
 }
