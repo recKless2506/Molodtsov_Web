@@ -18,8 +18,9 @@ func StartServer(repo *repository.Repository) {
 	r.GET("/", h.GetCatalog)
 	r.GET("/hello", h.GetCatalog)
 	r.GET("/heater/:id", h.GetHeaterByID)
-	r.GET("/zayavka", h.GetApplication) // отображение страницы с заявками
-	// <-- страница с заявками
+
+	r.GET("/zayavka", h.GetApplications)
+	r.POST("/clear-cart", h.ClearCart)
 
 	if err := r.Run(":8001"); err != nil {
 		log.Fatalf("server failed to start: %v", err)

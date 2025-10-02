@@ -87,8 +87,9 @@ func StartServer(repo *repository.Repository) {
 	r.GET("/", h.GetCatalog)
 	r.GET("/hello", h.GetCatalog)
 	r.GET("/heater/:id", h.GetHeaterByID)
-	r.GET("/zayavka", h.GetApplication) // отображение страницы с заявками
-	// <-- страница с заявками
+
+	r.GET("/zayavka", h.GetApplications)
+	r.POST("/clear-cart", h.ClearCart)
 
 	if err := r.Run(":8001"); err != nil {
 		log.Fatalf("server failed to start: %v", err)
@@ -246,6 +247,7 @@ func FromEnv() string {
 package handler
 
 import (
+	"Project/internal/app/ds"
 	"Project/internal/app/repository"
 	"log"
 	"net/http"
@@ -296,17 +298,30 @@ func (h *Handler) GetHeaterByID(ctx *gin.Context) {
 	})
 }
 
-// Страница с заявками (корзина)
-func (h *Handler) GetApplication(ctx *gin.Context) {
+// Страница с заявками
+func (h *Handler) GetApplications(ctx *gin.Context) {
 	requests, err := h.Repository.GetAllRequests()
 	if err != nil {
-		ctx.String(http.StatusInternalServerError, "Ошибка получения заявок")
+		ctx.String(http.StatusInternalServerError, "Ошибка при получении заявок: %v", err)
 		return
 	}
-
 	ctx.HTML(http.StatusOK, "application.html", gin.H{
 		"requests": requests,
 	})
+}
+
+// Очистка корзины (POST-запрос)
+func (h *Handler) ClearCart(ctx *gin.Context) {
+	if err := h.Repository.DB().
+		Model(&ds.HeatersProductRequest{}).
+		Where("status = ?", "черновик").
+		Update("status", "удален").Error; err != nil {
+		ctx.String(http.StatusInternalServerError, "Ошибка при очистке корзины: %v", err)
+		return
+	}
+
+	// 🔥 После очистки сразу редиректим на страницу заявок
+	ctx.Redirect(http.StatusSeeOther, "/zayavka")
 }
 
 
@@ -336,6 +351,7 @@ func (r *Repository) DB() *gorm.DB {
 	return r.db
 }
 
+// Получаем все товары
 func (r *Repository) GetHeaterProducts() ([]ds.HeatersProduct, error) {
 	var products []ds.HeatersProduct
 	if err := r.db.Where("is_delete = ?", false).Find(&products).Error; err != nil {
@@ -344,6 +360,7 @@ func (r *Repository) GetHeaterProducts() ([]ds.HeatersProduct, error) {
 	return products, nil
 }
 
+// Получаем товар по ID
 func (r *Repository) GetHeaterProductByID(id uint) (*ds.HeatersProduct, error) {
 	var product ds.HeatersProduct
 	if err := r.db.Where("id = ? AND is_delete = ?", id, false).First(&product).Error; err != nil {
@@ -352,13 +369,21 @@ func (r *Repository) GetHeaterProductByID(id uint) (*ds.HeatersProduct, error) {
 	return &product, nil
 }
 
-// Получаем все заявки и связанные товары
 func (r *Repository) GetAllRequests() ([]ds.HeatersProductRequest, error) {
 	var requests []ds.HeatersProductRequest
-	if err := r.db.Preload("Products.Product").Find(&requests).Error; err != nil {
+	if err := r.db.Preload("Products.Product").
+		Where("status != ?", "удален"). // 🔥 фильтруем удалённые заявки
+		Find(&requests).Error; err != nil {
 		return nil, err
 	}
 	return requests, nil
+}
+
+// Очистка корзины: обновляем статус всех черновиков на "удален"
+func (r *Repository) ClearRequests() error {
+	return r.db.Model(&ds.HeatersProductRequest{}).
+		Where("status = ?", "черновик").
+		Update("status", "удален").Error
 }
 
 
@@ -877,6 +902,22 @@ body, html {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Заявки</title>
   <link rel="stylesheet" href="/static/styles/application.css">
+  <style>
+    .clear-button {
+      padding: 10px 20px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+
+    .clear-button:hover {
+      background: darkred;
+    }
+  </style>
 </head>
 <body>
   <header class="header">
@@ -897,6 +938,11 @@ body, html {
   </header>
 
   <div class="page-container">
+    <!-- Кнопка очистки корзины -->
+    <form method="POST" action="/zayavka/clear">
+      <button type="submit" class="clear-button">Очистить корзину</button>
+    </form>
+
     {{range .requests}}
       <!-- Верхние поля заявки (один раз) -->
       <div class="input-container">
@@ -926,7 +972,7 @@ body, html {
               <div class="card-divider"></div>
               <div class="card-text-block block-input">
                 <div class="input-label">Объём носителя</div>
-                <input type="text" class="card-input" value="{{$.CarrierVolume}}" readonly style="color: #000;">
+                <input type="text" class="card-input" value="{{.Area}}" readonly style="color: #000;">
               </div>
             </div>
           </div>
@@ -934,6 +980,10 @@ body, html {
       </div>
 
       <hr style="margin:30px 0; border-color:#ccc;">
+    {{end}}
+
+    {{if not .requests}}
+      <p>Ваша корзина пуста.</p>
     {{end}}
   </div>
 </body>

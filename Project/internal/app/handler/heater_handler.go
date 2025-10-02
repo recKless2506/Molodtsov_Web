@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"Project/internal/app/ds"
 	"Project/internal/app/repository"
 	"log"
 	"net/http"
@@ -51,15 +52,28 @@ func (h *Handler) GetHeaterByID(ctx *gin.Context) {
 	})
 }
 
-// Страница с заявками (корзина)
-func (h *Handler) GetApplication(ctx *gin.Context) {
+// Страница с заявками
+func (h *Handler) GetApplications(ctx *gin.Context) {
 	requests, err := h.Repository.GetAllRequests()
 	if err != nil {
-		ctx.String(http.StatusInternalServerError, "Ошибка получения заявок")
+		ctx.String(http.StatusInternalServerError, "Ошибка при получении заявок: %v", err)
 		return
 	}
-
 	ctx.HTML(http.StatusOK, "application.html", gin.H{
 		"requests": requests,
 	})
+}
+
+// Очистка корзины (POST-запрос)
+func (h *Handler) ClearCart(ctx *gin.Context) {
+	if err := h.Repository.DB().
+		Model(&ds.HeatersProductRequest{}).
+		Where("status = ?", "черновик").
+		Update("status", "удален").Error; err != nil {
+		ctx.String(http.StatusInternalServerError, "Ошибка при очистке корзины: %v", err)
+		return
+	}
+
+	// 🔥 После очистки сразу редиректим на страницу заявок
+	ctx.Redirect(http.StatusSeeOther, "/zayavka")
 }

@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Заявки</title>
   <link rel="stylesheet" href="/static/styles/application.css">
+  <style>
+    .clear-button {
+      padding: 10px 20px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+
+    .clear-button:hover {
+      background: darkred;
+    }
+  </style>
 </head>
 <body>
   <header class="header">
@@ -25,6 +41,11 @@
   </header>
 
   <div class="page-container">
+    <!-- Кнопка очистки корзины -->
+    <form method="POST" action="/zayavka/clear">
+      <button type="submit" class="clear-button">Очистить корзину</button>
+    </form>
+
     {{range .requests}}
       <!-- Верхние поля заявки (один раз) -->
       <div class="input-container">
@@ -54,7 +75,7 @@
               <div class="card-divider"></div>
               <div class="card-text-block block-input">
                 <div class="input-label">Объём носителя</div>
-                <input type="text" class="card-input" value="{{$.CarrierVolume}}" readonly style="color: #000;">
+                <input type="text" class="card-input" value="{{.Area}}" readonly style="color: #000;">
               </div>
             </div>
           </div>
@@ -62,6 +83,10 @@
       </div>
 
       <hr style="margin:30px 0; border-color:#ccc;">
+    {{end}}
+
+    {{if not .requests}}
+      <p>Ваша корзина пуста.</p>
     {{end}}
   </div>
 </body>
