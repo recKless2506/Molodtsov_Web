@@ -1,19 +1,22 @@
 package ds
 
-import "gorm.io/gorm"
+import "time"
 
-type HeatersProduct struct {
-	gorm.Model         // автоматически добавит ID, CreatedAt, UpdatedAt, DeletedAt
-	Title       string `gorm:"column:title"`
-	Type        string `gorm:"column:type"`
-	Description string `gorm:"column:description"`
-	Power       string `gorm:"column:power"`
-	Efficiency  string `gorm:"column:efficiency"`
-	Image       string `gorm:"column:image"`
-	IsDelete    bool   `gorm:"column:is_delete"`
+type HeaterProduct struct {
+	ID          uint   `gorm:"primaryKey"`
+	Title       string `gorm:"size:100;not null"`
+	Type        string `gorm:"size:30;not null"`
+	Description string `gorm:"size:500"`
+	Power       string `gorm:"not null"`
+	Efficiency  string `gorm:"not null"`
+	Image       string
+	IsDelete    bool `gorm:"default:false;not null"`
+	DeletedAt   *time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // указываем точное имя таблицы
-func (HeatersProduct) TableName() string {
+func (HeaterProduct) TableName() string {
 	return "heaters_products"
 }

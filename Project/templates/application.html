@@ -42,12 +42,12 @@
 
   <div class="page-container">
     <!-- Кнопка очистки корзины -->
-    <form method="POST" action="/zayavka/clear">
+    <form method="POST" action="/clear-cart">
       <button type="submit" class="clear-button">Очистить корзину</button>
     </form>
 
     {{range .requests}}
-      <!-- Верхние поля заявки (один раз) -->
+      <!-- Верхние поля заявки -->
       <div class="input-container">
         <div class="input-block">
           <div class="input-label">Площадь помещения</div>
@@ -65,13 +65,13 @@
 
       <!-- Карточки товаров заявки -->
       <div class="cards-container">
-        {{range .Products}}
+        {{range .RequestHeaters}}
           <div class="card">
-            <img src="{{.Product.Image}}" alt="{{.Product.Title}}" class="card-img">
+            <img src="{{.HeaterProduct.Image}}" alt="{{.HeaterProduct.Title}}" class="card-img">
             <div class="card-text-row">
-              <div class="card-text-block block-title">{{.Product.Title}}</div>
+              <div class="card-text-block block-title">{{.HeaterProduct.Title}}</div>
               <div class="card-divider"></div>
-              <div class="card-text-block block-specs">{{.Product.Power}}</div>
+              <div class="card-text-block block-specs">{{.HeaterProduct.Power}}</div>
               <div class="card-divider"></div>
               <div class="card-text-block block-input">
                 <div class="input-label">Объём носителя</div>

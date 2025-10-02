@@ -53,9 +53,9 @@ func main() {
 
 	// Миграции
 	err = db.AutoMigrate(
-		&ds.HeatersProduct{},
+		&ds.HeaterProduct{},
 		&ds.HeatersProductRequest{},
-		&ds.RequestHeaters{},
+		&ds.RequestHeater{},
 		&ds.User{},
 	)
 	if err != nil {
@@ -85,11 +85,12 @@ func StartServer(repo *repository.Repository) {
 	r.Static("/static", "./resources")
 
 	r.GET("/", h.GetCatalog)
-	r.GET("/hello", h.GetCatalog)
+	r.GET("/hello", h.SearchCatalog)
 	r.GET("/heater/:id", h.GetHeaterByID)
 
 	r.GET("/zayavka", h.GetApplications)
 	r.POST("/clear-cart", h.ClearCart)
+	r.POST("/add-to-cart/:id", h.AddToCart) // новый POST-роу
 
 	if err := r.Run(":8001"); err != nil {
 		log.Fatalf("server failed to start: %v", err)
@@ -147,21 +148,24 @@ func NewConfig() (*Config, error) {
 
 package ds
 
-import "gorm.io/gorm"
+import "time"
 
-type HeatersProduct struct {
-	gorm.Model         // автоматически добавит ID, CreatedAt, UpdatedAt, DeletedAt
-	Title       string `gorm:"column:title"`
-	Type        string `gorm:"column:type"`
-	Description string `gorm:"column:description"`
-	Power       string `gorm:"column:power"`
-	Efficiency  string `gorm:"column:efficiency"`
-	Image       string `gorm:"column:image"`
-	IsDelete    bool   `gorm:"column:is_delete"`
+type HeaterProduct struct {
+	ID          uint   `gorm:"primaryKey"`
+	Title       string `gorm:"size:100;not null"`
+	Type        string `gorm:"size:30;not null"`
+	Description string `gorm:"size:500"`
+	Power       string `gorm:"not null"`
+	Efficiency  string `gorm:"not null"`
+	Image       string
+	IsDelete    bool `gorm:"default:false;not null"`
+	DeletedAt   *time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // указываем точное имя таблицы
-func (HeatersProduct) TableName() string {
+func (HeaterProduct) TableName() string {
 	return "heaters_products"
 }
 
@@ -169,44 +173,43 @@ func (HeatersProduct) TableName() string {
 package ds
 
 import (
-	"database/sql"
-
-	"gorm.io/gorm"
+	"time"
 )
 
 type HeatersProductRequest struct {
-	gorm.Model
-	Status             string           `gorm:"column:status"`
-	CreatorID          uint             `gorm:"column:creator_id"`
-	FormationDate      sql.NullTime     `gorm:"column:formation_date"`
-	DeleteDate         sql.NullTime     `gorm:"column:delete_date"`
-	CompletionDate     sql.NullTime     `gorm:"column:completion_date"`
-	RejectionDate      sql.NullTime     `gorm:"column:rejection_date"`
-	ModeratorID        uint             `gorm:"column:moderator_id"`
-	PlaceSquare        float64          `gorm:"column:place_square"`
-	OutsideTemperature float64          `gorm:"column:outside_temperature"`
-	InsideTemperature  float64          `gorm:"column:inside_temperature"`
-	CarrierVolume      float64          `gorm:"column:carrier_volume"`
-	Products           []RequestHeaters `gorm:"foreignKey:HeatersProductRequestID"`
-}
-
-// Указываем точное имя таблицы
-func (HeatersProductRequest) TableName() string {
-	return "heaters_product_requests"
+	ID                 uint      `gorm:"primaryKey"`
+	Status             string    `gorm:"not null"`
+	CreatedAt          time.Time `gorm:"not null"`
+	UpdatedAt          time.Time `gorm:"not null"`
+	CreatorID          uint      `gorm:"not null"`
+	FormationDate      *time.Time
+	DeleteDate         *time.Time
+	CompletionDate     *time.Time
+	RejectionDate      *time.Time
+	ModeratorID        *uint
+	PlaceSquare        float64 `gorm:"not null"`
+	OutsideTemperature float64 `gorm:"not null"`
+	InsideTemperature  float64 `gorm:"not null"`
+	CarrierVolume      float64 `gorm:"not null"`
+	DeletedAt          *time.Time
+	RequestHeaters     []RequestHeater `gorm:"foreignKey:HeatersProductRequestID;references:ID"`
 }
 
 
 package ds
 
-import "gorm.io/gorm"
+import "time"
 
-type RequestHeaters struct {
-	gorm.Model
-	HeatersProductRequestID uint
-	HeatersProductID        uint
+type RequestHeater struct {
+	HeatersProductRequestID uint `gorm:"column:heaters_product_request_id;primaryKey"`
+	HeatersProductID        uint `gorm:"column:heaters_product_id;primaryKey"`
 	Area                    float64
+	DeletedAt               *time.Time
+	HeaterProduct           *HeaterProduct `gorm:"foreignKey:HeatersProductID;references:ID"`
+}
 
-	Product HeatersProduct `gorm:"foreignKey:HeatersProductID"`
+func (RequestHeater) TableName() string {
+	return "request_heaters"
 }
 
 
@@ -273,7 +276,6 @@ func (h *Handler) GetCatalog(ctx *gin.Context) {
 		return
 	}
 
-	// 🔥 получаем количество заявок (корзины)
 	count, err := h.Repository.GetRequestsCount()
 	if err != nil {
 		log.Println("Ошибка получения количества заявок:", err)
@@ -328,8 +330,52 @@ func (h *Handler) ClearCart(ctx *gin.Context) {
 		return
 	}
 
-	// 🔥 После очистки сразу редиректим на страницу заявок
 	ctx.Redirect(http.StatusSeeOther, "/zayavka")
+}
+
+// Поиск товаров
+func (h *Handler) SearchCatalog(ctx *gin.Context) {
+	query := ctx.Query("query")
+	if query == "" {
+		ctx.Redirect(http.StatusSeeOther, "/")
+		return
+	}
+
+	products, err := h.Repository.SearchHeaterProducts(query)
+	if err != nil {
+		log.Println("Ошибка поиска продуктов:", err)
+		ctx.String(http.StatusInternalServerError, "Ошибка поиска товаров")
+		return
+	}
+
+	count, err := h.Repository.GetRequestsCount()
+	if err != nil {
+		log.Println("Ошибка получения количества заявок:", err)
+		count = 0
+	}
+
+	ctx.HTML(http.StatusOK, "catalog.html", gin.H{
+		"products":   products,
+		"cart_count": count,
+	})
+}
+
+// Добавление товара в корзину
+func (h *Handler) AddToCart(ctx *gin.Context) {
+	idParam := ctx.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		ctx.String(http.StatusBadRequest, "Неверный ID товара")
+		return
+	}
+
+	if err := h.Repository.AddProductToCart(uint(id)); err != nil {
+		log.Println("Ошибка при добавлении товара в корзину:", err)
+		ctx.String(http.StatusInternalServerError, "Ошибка при добавлении товара в корзину: "+err.Error())
+		return
+	}
+
+	ctx.Redirect(http.StatusSeeOther, "/hello")
 }
 
 
@@ -338,6 +384,7 @@ package repository
 import (
 	"Project/internal/app/ds"
 	"fmt"
+	"log"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -359,43 +406,38 @@ func (r *Repository) DB() *gorm.DB {
 	return r.db
 }
 
-// Получаем все товары
-func (r *Repository) GetHeaterProducts() ([]ds.HeatersProduct, error) {
-	var products []ds.HeatersProduct
+func (r *Repository) GetHeaterProducts() ([]ds.HeaterProduct, error) {
+	var products []ds.HeaterProduct
 	if err := r.db.Where("is_delete = ?", false).Find(&products).Error; err != nil {
 		return nil, err
 	}
 	return products, nil
 }
 
-// Получаем товар по ID
-func (r *Repository) GetHeaterProductByID(id uint) (*ds.HeatersProduct, error) {
-	var product ds.HeatersProduct
+func (r *Repository) GetHeaterProductByID(id uint) (*ds.HeaterProduct, error) {
+	var product ds.HeaterProduct
 	if err := r.db.Where("id = ? AND is_delete = ?", id, false).First(&product).Error; err != nil {
 		return nil, err
 	}
 	return &product, nil
 }
 
-// Получаем все заявки
 func (r *Repository) GetAllRequests() ([]ds.HeatersProductRequest, error) {
 	var requests []ds.HeatersProductRequest
 	if err := r.db.Preload("Products.Product").
-		Where("status != ?", "удален"). // 🔥 фильтруем удалённые заявки
+		Where("status != ?", "удален").
 		Find(&requests).Error; err != nil {
 		return nil, err
 	}
 	return requests, nil
 }
 
-// Очистка корзины: обновляем статус всех черновиков на "удален"
 func (r *Repository) ClearRequests() error {
 	return r.db.Model(&ds.HeatersProductRequest{}).
 		Where("status = ?", "черновик").
 		Update("status", "удален").Error
 }
 
-// 🔥 Подсчёт заявок (для корзины)
 func (r *Repository) GetRequestsCount() (int64, error) {
 	var count int64
 	if err := r.db.Model(&ds.HeatersProductRequest{}).
@@ -404,6 +446,66 @@ func (r *Repository) GetRequestsCount() (int64, error) {
 		return 0, err
 	}
 	return count, nil
+}
+
+// 🔥 Новый метод поиска
+func (r *Repository) SearchHeaterProducts(query string) ([]ds.HeaterProduct, error) {
+	var products []ds.HeaterProduct
+	if err := r.db.Where(
+		"is_delete = ? AND (title ILIKE ? OR type ILIKE ? OR description ILIKE ?)",
+		false,
+		"%"+query+"%",
+		"%"+query+"%",
+		"%"+query+"%",
+	).Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
+}
+
+func (r *Repository) AddProductToCart(productID uint) error {
+	// 1️⃣ Проверяем, что товар существует
+	var product ds.HeaterProduct
+	if err := r.db.First(&product, productID).Error; err != nil {
+		return fmt.Errorf("товар с ID %d не найден: %w", productID, err)
+	}
+
+	// 2️⃣ Создаем заявку с статусом "черновик"
+	request := ds.HeatersProductRequest{
+		Status:             "черновик",
+		CreatorID:          1, // можно заменить на текущего пользователя
+		PlaceSquare:        0,
+		OutsideTemperature: 0,
+		InsideTemperature:  0,
+		CarrierVolume:      0,
+	}
+
+	if err := r.db.Create(&request).Error; err != nil {
+		log.Println("Ошибка создания заявки:", err)
+		return fmt.Errorf("не удалось создать заявку: %w", err)
+	}
+
+	log.Println("Создана заявка ID:", request.ID)
+
+	if request.ID == 0 {
+		return fmt.Errorf("request.ID = 0 после создания заявки")
+	}
+
+	// 3️⃣ Создаем связь с товаром в request_heaters
+	link := ds.RequestHeater{
+		HeatersProductRequestID: request.ID,
+		HeatersProductID:        productID,
+		Area:                    0,
+	}
+
+	if err := r.db.Create(&link).Error; err != nil {
+		log.Println("Ошибка создания связи request_heaters:", err)
+		return fmt.Errorf("не удалось добавить товар к заявке: %w", err)
+	}
+
+	log.Println("Товар успешно добавлен в корзину:", product.Title)
+
+	return nil
 }
 
 
@@ -1047,7 +1149,7 @@ body, html {
     </div>
     <div class="cart-container">
       {{if gt .cart_count 0}}
-        <!-- 🔥 если корзина не пуста -->
+        <!-- если корзина не пуста -->
         <a href="/zayavka" class="cart-icon">
           <svg viewBox="0 0 24 24">
             <path d="M7 4h-2l-3 9v2h2l3-9zm0 11a2 2 0 1 0 4 0 2 2 0 0 0-4 0zm9-11h-6l-1 2h8v2h-8l1 2h6v2h-6l1 2h6v2h-6l1 2h6v2h-6v-2h-6v-2h6l-1-2h-6v-2h6l-1-2h-6v-2h6l-1-2h6v-2z"/>
@@ -1055,7 +1157,7 @@ body, html {
           <div class="cart-count">{{.cart_count}}</div>
         </a>
       {{else}}
-        <!-- 🔥 если корзина пуста -->
+        <!-- если корзина пуста -->
         <div class="cart-icon" style="opacity:0.5; cursor: default; pointer-events:none;">
           <svg viewBox="0 0 24 24">
             <path d="M7 4h-2l-3 9v2h2l3-9zm0 11a2 2 0 1 0 4 0 2 2 0 0 0-4 0zm9-11h-6l-1 2h8v2h-8l1 2h6v2h-6l1 2h6v2h-6l1 2h6v2h-6v-2h-6v-2h6l-1-2h-6v-2h6l-1-2h-6v-2h6l-1-2h6v-2z"/>
@@ -1074,8 +1176,13 @@ body, html {
         <div class="content">
           <div class="product-title">{{.Title}}</div>
           <div class="product-specs">{{.Efficiency}}</div>
-          <div style="margin-top:auto; width:100%; display:flex; justify-content:center;">
+          <div style="margin-top:auto; width:100%; display:flex; justify-content:center; gap:10px;">
+            <!-- Подробнее -->
             <a href="/heater/{{.ID}}" class="product-button">Подробнее</a>
+            <!-- Добавить в корзину -->
+            <form method="POST" action="/add-to-cart/{{.ID}}" style="display:inline;">
+              <button type="submit" class="product-button">+</button>
+            </form>
           </div>
         </div>
       </div>

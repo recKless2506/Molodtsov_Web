@@ -1,28 +1,19 @@
 package ds
 
 import (
-	"database/sql"
-
-	"gorm.io/gorm"
+	"time"
 )
 
 type HeatersProductRequest struct {
-	gorm.Model
-	Status             string           `gorm:"column:status"`
-	CreatorID          uint             `gorm:"column:creator_id"`
-	FormationDate      sql.NullTime     `gorm:"column:formation_date"`
-	DeleteDate         sql.NullTime     `gorm:"column:delete_date"`
-	CompletionDate     sql.NullTime     `gorm:"column:completion_date"`
-	RejectionDate      sql.NullTime     `gorm:"column:rejection_date"`
-	ModeratorID        uint             `gorm:"column:moderator_id"`
-	PlaceSquare        float64          `gorm:"column:place_square"`
-	OutsideTemperature float64          `gorm:"column:outside_temperature"`
-	InsideTemperature  float64          `gorm:"column:inside_temperature"`
-	CarrierVolume      float64          `gorm:"column:carrier_volume"`
-	Products           []RequestHeaters `gorm:"foreignKey:HeatersProductRequestID"`
-}
-
-// Указываем точное имя таблицы
-func (HeatersProductRequest) TableName() string {
-	return "heaters_product_requests"
+	ID                 uint      `gorm:"primaryKey"`
+	Status             string    `gorm:"not null"`
+	CreatedAt          time.Time `gorm:"not null"`
+	UpdatedAt          time.Time `gorm:"not null"`
+	CreatorID          uint      `gorm:"not null"`
+	PlaceSquare        float64   `gorm:"not null"`
+	OutsideTemperature float64   `gorm:"not null"`
+	InsideTemperature  float64   `gorm:"not null"`
+	CarrierVolume      float64   `gorm:"not null"`
+	DeletedAt          *time.Time
+	RequestHeaters     []RequestHeater `gorm:"foreignKey:HeatersProductRequestID;references:ID"`
 }

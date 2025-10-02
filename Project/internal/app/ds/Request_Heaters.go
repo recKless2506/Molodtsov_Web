@@ -1,12 +1,15 @@
 package ds
 
-import "gorm.io/gorm"
+import "time"
 
-type RequestHeaters struct {
-	gorm.Model
-	HeatersProductRequestID uint
-	HeatersProductID        uint
+type RequestHeater struct {
+	HeatersProductRequestID uint `gorm:"column:heaters_product_request_id;primaryKey"`
+	HeatersProductID        uint `gorm:"column:heaters_product_id;primaryKey"`
 	Area                    float64
+	DeletedAt               *time.Time
+	HeaterProduct           HeaterProduct `gorm:"foreignKey:HeatersProductID;references:ID"`
+}
 
-	Product HeatersProduct `gorm:"foreignKey:HeatersProductID"`
+func (RequestHeater) TableName() string {
+	return "request_heaters"
 }

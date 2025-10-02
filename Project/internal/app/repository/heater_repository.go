@@ -3,6 +3,7 @@ package repository
 import (
 	"Project/internal/app/ds"
 	"fmt"
+	"log"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -24,16 +25,16 @@ func (r *Repository) DB() *gorm.DB {
 	return r.db
 }
 
-func (r *Repository) GetHeaterProducts() ([]ds.HeatersProduct, error) {
-	var products []ds.HeatersProduct
+func (r *Repository) GetHeaterProducts() ([]ds.HeaterProduct, error) {
+	var products []ds.HeaterProduct
 	if err := r.db.Where("is_delete = ?", false).Find(&products).Error; err != nil {
 		return nil, err
 	}
 	return products, nil
 }
 
-func (r *Repository) GetHeaterProductByID(id uint) (*ds.HeatersProduct, error) {
-	var product ds.HeatersProduct
+func (r *Repository) GetHeaterProductByID(id uint) (*ds.HeaterProduct, error) {
+	var product ds.HeaterProduct
 	if err := r.db.Where("id = ? AND is_delete = ?", id, false).First(&product).Error; err != nil {
 		return nil, err
 	}
@@ -42,9 +43,13 @@ func (r *Repository) GetHeaterProductByID(id uint) (*ds.HeatersProduct, error) {
 
 func (r *Repository) GetAllRequests() ([]ds.HeatersProductRequest, error) {
 	var requests []ds.HeatersProductRequest
-	if err := r.db.Preload("Products.Product").
+
+	err := r.db.
+		Preload("RequestHeaters.HeaterProduct"). // загружаем товары внутри заявки
 		Where("status != ?", "удален").
-		Find(&requests).Error; err != nil {
+		Find(&requests).Error
+
+	if err != nil {
 		return nil, err
 	}
 	return requests, nil
@@ -67,8 +72,8 @@ func (r *Repository) GetRequestsCount() (int64, error) {
 }
 
 // 🔥 Новый метод поиска
-func (r *Repository) SearchHeaterProducts(query string) ([]ds.HeatersProduct, error) {
-	var products []ds.HeatersProduct
+func (r *Repository) SearchHeaterProducts(query string) ([]ds.HeaterProduct, error) {
+	var products []ds.HeaterProduct
 	if err := r.db.Where(
 		"is_delete = ? AND (title ILIKE ? OR type ILIKE ? OR description ILIKE ?)",
 		false,
@@ -79,4 +84,49 @@ func (r *Repository) SearchHeaterProducts(query string) ([]ds.HeatersProduct, er
 		return nil, err
 	}
 	return products, nil
+}
+
+func (r *Repository) AddProductToCart(productID uint) error {
+	// 1️⃣ Проверяем, что товар существует
+	var product ds.HeaterProduct
+	if err := r.db.First(&product, productID).Error; err != nil {
+		return fmt.Errorf("товар с ID %d не найден: %w", productID, err)
+	}
+
+	// 2️⃣ Создаем заявку с статусом "черновик"
+	request := ds.HeatersProductRequest{
+		Status:             "черновик",
+		CreatorID:          1, // можно заменить на текущего пользователя
+		PlaceSquare:        0,
+		OutsideTemperature: 0,
+		InsideTemperature:  0,
+		CarrierVolume:      0,
+	}
+
+	if err := r.db.Create(&request).Error; err != nil {
+		log.Println("Ошибка создания заявки:", err)
+		return fmt.Errorf("не удалось создать заявку: %w", err)
+	}
+
+	log.Println("Создана заявка ID:", request.ID)
+
+	if request.ID == 0 {
+		return fmt.Errorf("request.ID = 0 после создания заявки")
+	}
+
+	// 3️⃣ Создаем связь с товаром в request_heaters
+	link := ds.RequestHeater{
+		HeatersProductRequestID: request.ID,
+		HeatersProductID:        productID,
+		Area:                    0,
+	}
+
+	if err := r.db.Create(&link).Error; err != nil {
+		log.Println("Ошибка создания связи request_heaters:", err)
+		return fmt.Errorf("не удалось добавить товар к заявке: %w", err)
+	}
+
+	log.Println("Товар успешно добавлен в корзину:", product.Title)
+
+	return nil
 }

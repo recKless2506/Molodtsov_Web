@@ -66,6 +66,7 @@ func (h *Handler) GetApplications(ctx *gin.Context) {
 		ctx.String(http.StatusInternalServerError, "Ошибка при получении заявок: %v", err)
 		return
 	}
+
 	ctx.HTML(http.StatusOK, "application.html", gin.H{
 		"requests": requests,
 	})
@@ -109,4 +110,22 @@ func (h *Handler) SearchCatalog(ctx *gin.Context) {
 		"products":   products,
 		"cart_count": count,
 	})
+}
+
+// Добавление товара в корзину
+func (h *Handler) AddToCart(ctx *gin.Context) {
+	idParam := ctx.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		ctx.String(http.StatusBadRequest, "Неверный ID товара")
+		return
+	}
+
+	if err := h.Repository.AddProductToCart(uint(id)); err != nil {
+		log.Println("Ошибка при добавлении товара в корзину:", err)
+		ctx.String(http.StatusInternalServerError, "Ошибка при добавлении товара в корзину: "+err.Error())
+		return
+	}
+
+	ctx.Redirect(http.StatusSeeOther, "/hello")
 }

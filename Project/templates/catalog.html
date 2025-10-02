@@ -35,7 +35,7 @@
     </div>
     <div class="cart-container">
       {{if gt .cart_count 0}}
-        <!-- 🔥 если корзина не пуста -->
+        <!-- если корзина не пуста -->
         <a href="/zayavka" class="cart-icon">
           <svg viewBox="0 0 24 24">
             <path d="M7 4h-2l-3 9v2h2l3-9zm0 11a2 2 0 1 0 4 0 2 2 0 0 0-4 0zm9-11h-6l-1 2h8v2h-8l1 2h6v2h-6l1 2h6v2h-6l1 2h6v2h-6v-2h-6v-2h6l-1-2h-6v-2h6l-1-2h-6v-2h6l-1-2h6v-2z"/>
@@ -43,7 +43,7 @@
           <div class="cart-count">{{.cart_count}}</div>
         </a>
       {{else}}
-        <!-- 🔥 если корзина пуста -->
+        <!-- если корзина пуста -->
         <div class="cart-icon" style="opacity:0.5; cursor: default; pointer-events:none;">
           <svg viewBox="0 0 24 24">
             <path d="M7 4h-2l-3 9v2h2l3-9zm0 11a2 2 0 1 0 4 0 2 2 0 0 0-4 0zm9-11h-6l-1 2h8v2h-8l1 2h6v2h-6l1 2h6v2h-6l1 2h6v2h-6v-2h-6v-2h6l-1-2h-6v-2h6l-1-2h-6v-2h6l-1-2h6v-2z"/>
@@ -62,8 +62,13 @@
         <div class="content">
           <div class="product-title">{{.Title}}</div>
           <div class="product-specs">{{.Efficiency}}</div>
-          <div style="margin-top:auto; width:100%; display:flex; justify-content:center;">
+          <div style="margin-top:auto; width:100%; display:flex; justify-content:center; gap:10px;">
+            <!-- Подробнее -->
             <a href="/heater/{{.ID}}" class="product-button">Подробнее</a>
+            <!-- Добавить в корзину -->
+            <form method="POST" action="/add-to-cart/{{.ID}}" style="display:inline;">
+              <button type="submit" class="product-button">+</button>
+            </form>
           </div>
         </div>
       </div>

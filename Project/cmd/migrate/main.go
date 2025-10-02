@@ -24,9 +24,9 @@ func main() {
 
 	// Миграции
 	err = db.AutoMigrate(
-		&ds.HeatersProduct{},
+		&ds.HeaterProduct{},
 		&ds.HeatersProductRequest{},
-		&ds.RequestHeaters{},
+		&ds.RequestHeater{},
 		&ds.User{},
 	)
 	if err != nil {
