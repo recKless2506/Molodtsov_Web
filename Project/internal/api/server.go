@@ -16,7 +16,7 @@ func StartServer(repo *repository.Repository) {
 	r.Static("/static", "./resources")
 
 	r.GET("/", h.GetCatalog)
-	r.GET("/hello", h.GetCatalog)
+	r.GET("/hello", h.SearchCatalog)
 	r.GET("/heater/:id", h.GetHeaterByID)
 
 	r.GET("/zayavka", h.GetApplications)

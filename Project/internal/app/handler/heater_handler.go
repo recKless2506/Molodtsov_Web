@@ -27,7 +27,6 @@ func (h *Handler) GetCatalog(ctx *gin.Context) {
 		return
 	}
 
-	// 🔥 получаем количество заявок (корзины)
 	count, err := h.Repository.GetRequestsCount()
 	if err != nil {
 		log.Println("Ошибка получения количества заявок:", err)
@@ -82,6 +81,32 @@ func (h *Handler) ClearCart(ctx *gin.Context) {
 		return
 	}
 
-	// 🔥 После очистки сразу редиректим на страницу заявок
 	ctx.Redirect(http.StatusSeeOther, "/zayavka")
+}
+
+// Поиск товаров
+func (h *Handler) SearchCatalog(ctx *gin.Context) {
+	query := ctx.Query("query")
+	if query == "" {
+		ctx.Redirect(http.StatusSeeOther, "/")
+		return
+	}
+
+	products, err := h.Repository.SearchHeaterProducts(query)
+	if err != nil {
+		log.Println("Ошибка поиска продуктов:", err)
+		ctx.String(http.StatusInternalServerError, "Ошибка поиска товаров")
+		return
+	}
+
+	count, err := h.Repository.GetRequestsCount()
+	if err != nil {
+		log.Println("Ошибка получения количества заявок:", err)
+		count = 0
+	}
+
+	ctx.HTML(http.StatusOK, "catalog.html", gin.H{
+		"products":   products,
+		"cart_count": count,
+	})
 }

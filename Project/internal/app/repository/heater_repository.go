@@ -24,7 +24,6 @@ func (r *Repository) DB() *gorm.DB {
 	return r.db
 }
 
-// Получаем все товары
 func (r *Repository) GetHeaterProducts() ([]ds.HeatersProduct, error) {
 	var products []ds.HeatersProduct
 	if err := r.db.Where("is_delete = ?", false).Find(&products).Error; err != nil {
@@ -33,7 +32,6 @@ func (r *Repository) GetHeaterProducts() ([]ds.HeatersProduct, error) {
 	return products, nil
 }
 
-// Получаем товар по ID
 func (r *Repository) GetHeaterProductByID(id uint) (*ds.HeatersProduct, error) {
 	var product ds.HeatersProduct
 	if err := r.db.Where("id = ? AND is_delete = ?", id, false).First(&product).Error; err != nil {
@@ -42,25 +40,22 @@ func (r *Repository) GetHeaterProductByID(id uint) (*ds.HeatersProduct, error) {
 	return &product, nil
 }
 
-// Получаем все заявки
 func (r *Repository) GetAllRequests() ([]ds.HeatersProductRequest, error) {
 	var requests []ds.HeatersProductRequest
 	if err := r.db.Preload("Products.Product").
-		Where("status != ?", "удален"). // 🔥 фильтруем удалённые заявки
+		Where("status != ?", "удален").
 		Find(&requests).Error; err != nil {
 		return nil, err
 	}
 	return requests, nil
 }
 
-// Очистка корзины: обновляем статус всех черновиков на "удален"
 func (r *Repository) ClearRequests() error {
 	return r.db.Model(&ds.HeatersProductRequest{}).
 		Where("status = ?", "черновик").
 		Update("status", "удален").Error
 }
 
-// 🔥 Подсчёт заявок (для корзины)
 func (r *Repository) GetRequestsCount() (int64, error) {
 	var count int64
 	if err := r.db.Model(&ds.HeatersProductRequest{}).
@@ -69,4 +64,19 @@ func (r *Repository) GetRequestsCount() (int64, error) {
 		return 0, err
 	}
 	return count, nil
+}
+
+// 🔥 Новый метод поиска
+func (r *Repository) SearchHeaterProducts(query string) ([]ds.HeatersProduct, error) {
+	var products []ds.HeatersProduct
+	if err := r.db.Where(
+		"is_delete = ? AND (title ILIKE ? OR type ILIKE ? OR description ILIKE ?)",
+		false,
+		"%"+query+"%",
+		"%"+query+"%",
+		"%"+query+"%",
+	).Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
 }
