@@ -71,7 +71,7 @@ func (r *Repository) GetRequestsCount() (int64, error) {
 	return count, nil
 }
 
-// 🔥 Новый метод поиска
+// Новый метод поиска
 func (r *Repository) SearchHeaterProducts(query string) ([]ds.HeaterProduct, error) {
 	var products []ds.HeaterProduct
 	if err := r.db.Where(
@@ -87,16 +87,16 @@ func (r *Repository) SearchHeaterProducts(query string) ([]ds.HeaterProduct, err
 }
 
 func (r *Repository) AddProductToCart(productID uint) error {
-	// 1️⃣ Проверяем, что товар существует
+	// Проверяем, что товар существует
 	var product ds.HeaterProduct
 	if err := r.db.First(&product, productID).Error; err != nil {
 		return fmt.Errorf("товар с ID %d не найден: %w", productID, err)
 	}
 
-	// 2️⃣ Создаем заявку с статусом "черновик"
+	//  Создаем заявку с статусом "черновик"
 	request := ds.HeatersProductRequest{
 		Status:             "черновик",
-		CreatorID:          1, // можно заменить на текущего пользователя
+		CreatorID:          1,
 		PlaceSquare:        0,
 		OutsideTemperature: 0,
 		InsideTemperature:  0,
@@ -114,7 +114,7 @@ func (r *Repository) AddProductToCart(productID uint) error {
 		return fmt.Errorf("request.ID = 0 после создания заявки")
 	}
 
-	// 3️⃣ Создаем связь с товаром в request_heaters
+	// Создаем связь с товаром в request_heaters
 	link := ds.RequestHeater{
 		HeatersProductRequestID: request.ID,
 		HeatersProductID:        productID,

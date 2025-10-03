@@ -21,7 +21,7 @@ func StartServer(repo *repository.Repository) {
 
 	r.GET("/heaters_application", h.GetApplications)
 	r.POST("/clear-cart", h.ClearCart)
-	r.POST("/add-to-cart/:id", h.AddToCart) // новый POST-роу
+	r.POST("/add-to-cart/:id", h.AddToCart)
 
 	if err := r.Run(":8001"); err != nil {
 		log.Fatalf("server failed to start: %v", err)

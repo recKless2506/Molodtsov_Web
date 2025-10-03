@@ -1,4 +1,3 @@
-// internal/app/dsn/dsn.go
 package dsn
 
 import (

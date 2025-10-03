@@ -16,7 +16,6 @@ type HeaterProduct struct {
 	UpdatedAt   time.Time
 }
 
-// указываем точное имя таблицы
 func (HeaterProduct) TableName() string {
 	return "heaters_products"
 }
