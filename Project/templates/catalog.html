@@ -28,7 +28,7 @@
   <!-- Поиск и корзина -->
   <div class="top-bar">
     <div class="search-bar">
-      <form method="GET" action="/hello" class="search-form">
+      <form method="GET" action="/catalog_heaters" class="search-form">
         <input type="text" name="query" class="search-input" placeholder="Поиск...">
         <button type="submit" class="search-button">Найти</button>
       </form>
@@ -36,7 +36,7 @@
     <div class="cart-container">
       {{if gt .cart_count 0}}
         <!-- если корзина не пуста -->
-        <a href="/zayavka" class="cart-icon">
+        <a href="/heaters_application" class="cart-icon">
           <svg viewBox="0 0 24 24">
             <path d="M7 4h-2l-3 9v2h2l3-9zm0 11a2 2 0 1 0 4 0 2 2 0 0 0-4 0zm9-11h-6l-1 2h8v2h-8l1 2h6v2h-6l1 2h6v2h-6l1 2h6v2h-6v-2h-6v-2h6l-1-2h-6v-2h6l-1-2h-6v-2h6l-1-2h6v-2z"/>
           </svg>

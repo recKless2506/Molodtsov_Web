@@ -82,7 +82,7 @@ func (h *Handler) ClearCart(ctx *gin.Context) {
 		return
 	}
 
-	ctx.Redirect(http.StatusSeeOther, "/zayavka")
+	ctx.Redirect(http.StatusSeeOther, "/heaters_application")
 }
 
 // Поиск товаров
@@ -127,5 +127,5 @@ func (h *Handler) AddToCart(ctx *gin.Context) {
 		return
 	}
 
-	ctx.Redirect(http.StatusSeeOther, "/hello")
+	ctx.Redirect(http.StatusSeeOther, "/catalog_heaters")
 }

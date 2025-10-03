@@ -16,10 +16,10 @@ func StartServer(repo *repository.Repository) {
 	r.Static("/static", "./resources")
 
 	r.GET("/", h.GetCatalog)
-	r.GET("/hello", h.SearchCatalog)
+	r.GET("/catalog_heaters", h.SearchCatalog)
 	r.GET("/heater/:id", h.GetHeaterByID)
 
-	r.GET("/zayavka", h.GetApplications)
+	r.GET("/heaters_application", h.GetApplications)
 	r.POST("/clear-cart", h.ClearCart)
 	r.POST("/add-to-cart/:id", h.AddToCart) // новый POST-роу
 
