@@ -46,46 +46,44 @@
       <button type="submit" class="clear-button">Очистить корзину</button>
     </form>
 
-    {{range .requests}}
-      <!-- Верхние поля заявки -->
+    {{if .requests}}
+      <!-- Верхние поля — теперь общие -->
       <div class="input-container">
         <div class="input-block">
           <div class="input-label">Площадь помещения</div>
-          <input type="text" class="input-field" value="{{.PlaceSquare}}" readonly>
+          <input type="text" class="input-field" value="{{(index .requests 0).PlaceSquare}}" readonly>
         </div>
         <div class="input-block">
           <div class="input-label">Температура за помещением</div>
-          <input type="text" class="input-field" value="{{.OutsideTemperature}}" readonly>
+          <input type="text" class="input-field" value="{{(index .requests 0).OutsideTemperature}}" readonly>
         </div>
         <div class="input-block">
           <div class="input-label">Температура в помещении</div>
-          <input type="text" class="input-field" value="{{.InsideTemperature}}" readonly>
+          <input type="text" class="input-field" value="{{(index .requests 0).InsideTemperature}}" readonly>
         </div>
       </div>
 
-      <!-- Карточки товаров заявки -->
+      <!-- Карточки товаров -->
       <div class="cards-container">
-        {{range .RequestHeaters}}
-          <div class="card">
-            <img src="{{.HeaterProduct.Image}}" alt="{{.HeaterProduct.Title}}" class="card-img">
-            <div class="card-text-row">
-              <div class="card-text-block block-title">{{.HeaterProduct.Title}}</div>
-              <div class="card-divider"></div>
-              <div class="card-text-block block-specs">{{.HeaterProduct.Power}}</div>
-              <div class="card-divider"></div>
-              <div class="card-text-block block-input">
-                <div class="input-label">Объём носителя</div>
-                <input type="text" class="card-input" value="{{.Area}}" readonly style="color: #000;">
+        {{range .requests}}
+          {{range .RequestHeaters}}
+            <div class="card">
+              <img src="{{.HeaterProduct.Image}}" alt="{{.HeaterProduct.Title}}" class="card-img">
+              <div class="card-text-row">
+                <div class="card-text-block block-title">{{.HeaterProduct.Title}}</div>
+                <div class="card-divider"></div>
+                <div class="card-text-block block-specs">{{.HeaterProduct.Power}}</div>
+                <div class="card-divider"></div>
+                <div class="card-text-block block-input">
+                  <div class="input-label">Объём носителя</div>
+                  <input type="text" class="card-input" value="{{.Area}}" readonly style="color: #000;">
+                </div>
               </div>
             </div>
-          </div>
+          {{end}}
         {{end}}
       </div>
-
-      <hr style="margin:30px 0; border-color:#ccc;">
-    {{end}}
-
-    {{if not .requests}}
+    {{else}}
       <p>Ваша корзина пуста.</p>
     {{end}}
   </div>

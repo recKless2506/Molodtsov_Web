@@ -130,3 +130,89 @@ func (r *Repository) AddProductToCart(productID uint) error {
 
 	return nil
 }
+func (r *Repository) ClearCart(requestId int) error {
+	return r.db.Exec("UPDATE heaters_product_requests SET status='удален' WHERE id = $1", requestId).Error
+}
+
+func (r *Repository) GetHeatersRequestId(userId int) (int, error) {
+	var id int
+	err := r.db.Model(&ds.HeatersProductRequest{}).
+		Where("creator_id = ? AND status = 'черновик'", userId).Select("id").First(&id).Error
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+func (r *Repository) CreateHeaterProduct(product *ds.HeaterProduct) error {
+	return r.db.Create(product).Error
+}
+func (r *Repository) UpdateHeaterProduct(id uint, updated *ds.HeaterProduct) error {
+	var product ds.HeaterProduct
+	if err := r.db.First(&product, id).Error; err != nil {
+		return err
+	}
+	return r.db.Model(&product).Updates(updated).Error
+}
+
+// Логическое удаление товара
+func (r *Repository) DeleteHeaterProduct(id uint) error {
+	return r.db.Model(&ds.HeaterProduct{}).
+		Where("id = ?", id).
+		Update("is_delete", true).Error
+}
+func (r *Repository) UpdateHeatersProductRequest(id uint, updated *ds.HeatersProductRequest) error {
+	var request ds.HeatersProductRequest
+	if err := r.db.First(&request, id).Error; err != nil {
+		return err
+	}
+	return r.db.Model(&request).Updates(updated).Error
+}
+func (r *Repository) SubmitHeatersProductRequest(id uint) error {
+	return r.db.Model(&ds.HeatersProductRequest{}).
+		Where("id = ? AND status = ?", id, "черновик").
+		Update("status", "создано").Error
+}
+func (r *Repository) SetRequestStatus(id uint, status string) error {
+	return r.db.Model(&ds.HeatersProductRequest{}).
+		Where("id = ?", id).
+		Update("status", status).Error
+}
+func (r *Repository) RemoveProductFromRequest(requestID, productID uint) error {
+	return r.db.Where("heaters_product_request_id = ? AND heaters_product_id = ?", requestID, productID).
+		Delete(&ds.RequestHeater{}).Error
+}
+func (r *Repository) UpdateRequestHeater(requestID, productID uint, area float64) error {
+	return r.db.Model(&ds.RequestHeater{}).
+		Where("heaters_product_request_id = ? AND heaters_product_id = ?", requestID, productID).
+		Update("area", area).Error
+}
+func (r *Repository) CreateUser(login, password string, isModerator bool) error {
+	user := ds.User{
+		Login:       login,
+		Password:    password, // позже можно хэшировать
+		IsModerator: isModerator,
+	}
+	return r.db.Create(&user).Error
+}
+func (r *Repository) GetUserByID(userID uint) (*ds.User, error) {
+	var user ds.User
+	if err := r.db.First(&user, userID).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+func (r *Repository) UpdateUser(userID uint, updated *ds.User) error {
+	return r.db.Model(&ds.User{}).
+		Where("id = ?", userID).
+		Updates(map[string]interface{}{
+			"login":    updated.Login,
+			"password": updated.Password, // позже можно хэшировать
+		}).Error
+}
+func (r *Repository) AuthenticateUser(login, password string) (*ds.User, error) {
+	var user ds.User
+	if err := r.db.Where("login = ? AND password = ?", login, password).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
