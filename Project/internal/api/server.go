@@ -28,7 +28,7 @@ func StartServer(repo *repository.Repository) {
 	r.PUT("/heaters_application/:id", h.UpdateHeatersProductRequest)
 	r.PUT("/heaters_application/submit/:id", h.SubmitHeatersProductRequest)
 	r.PUT("/heaters_application/moderate/:id", h.ModerateHeatersProductRequest)
-	r.DELETE("/heaters_application/product", h.RemoveProductFromRequest)
+	r.DELETE("/heaters_application/product/:id", h.DeleteHeaterProduct)
 	r.PUT("/heaters_application/product", h.UpdateRequestHeater)
 	r.POST("/register", h.RegisterUser)
 	r.GET("/me", h.GetCurrentUser)

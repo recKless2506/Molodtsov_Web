@@ -19,6 +19,13 @@ func NewHandler(r *repository.Repository) *Handler {
 	return &Handler{Repository: r}
 }
 
+// Вспомогательная функция: определить, нужен ли JSON
+func wantsJSON(ctx *gin.Context) bool {
+	return ctx.Query("format") == "json" || ctx.GetHeader("Accept") == "application/json"
+}
+
+// ===================== Основные обработчики =====================
+
 // Список товаров (каталог)
 func (h *Handler) GetCatalog(ctx *gin.Context) {
 	products, err := h.Repository.GetHeaterProducts()
@@ -32,6 +39,18 @@ func (h *Handler) GetCatalog(ctx *gin.Context) {
 	if err != nil {
 		log.Println("Ошибка получения количества заявок:", err)
 		count = 0
+	}
+
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Каталог товаров",
+			"data": gin.H{
+				"cart_count": count,
+				"products":   products,
+			},
+		})
+		return
 	}
 
 	ctx.HTML(http.StatusOK, "catalog.html", gin.H{
@@ -55,6 +74,15 @@ func (h *Handler) GetHeaterByID(ctx *gin.Context) {
 		return
 	}
 
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Товар найден",
+			"data":    product,
+		})
+		return
+	}
+
 	ctx.HTML(http.StatusOK, "heater.html", gin.H{
 		"Product": product,
 	})
@@ -65,6 +93,15 @@ func (h *Handler) GetApplications(ctx *gin.Context) {
 	requests, err := h.Repository.GetAllRequests()
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, "Ошибка при получении заявок: %v", err)
+		return
+	}
+
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Список заявок",
+			"data":    requests,
+		})
 		return
 	}
 
@@ -83,7 +120,7 @@ func (h *Handler) ClearCart(ctx *gin.Context) {
 		return
 	}
 
-	// После очистки корзины отправляем пользователя на главную страницу
+	// Редирект оставляем
 	ctx.Redirect(http.StatusSeeOther, "/")
 }
 
@@ -108,6 +145,18 @@ func (h *Handler) SearchCatalog(ctx *gin.Context) {
 		count = 0
 	}
 
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": fmt.Sprintf("Результаты поиска по запросу '%s'", query),
+			"data": gin.H{
+				"cart_count": count,
+				"products":   products,
+			},
+		})
+		return
+	}
+
 	ctx.HTML(http.StatusOK, "catalog.html", gin.H{
 		"products":   products,
 		"cart_count": count,
@@ -129,8 +178,11 @@ func (h *Handler) AddToCart(ctx *gin.Context) {
 		return
 	}
 
+	// Редирект оставляем
 	ctx.Redirect(http.StatusSeeOther, "/catalog_heaters")
 }
+
+// ===================== CRUD для товаров =====================
 
 func (h *Handler) AddHeaterProduct(ctx *gin.Context) {
 	var input ds.HeaterProduct
@@ -144,8 +196,14 @@ func (h *Handler) AddHeaterProduct(ctx *gin.Context) {
 		return
 	}
 
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{"success": true, "message": "Товар успешно добавлен", "data": input})
+		return
+	}
+
 	ctx.String(http.StatusOK, "Товар успешно добавлен")
 }
+
 func (h *Handler) UpdateHeaterProduct(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.Atoi(idParam)
@@ -165,8 +223,14 @@ func (h *Handler) UpdateHeaterProduct(ctx *gin.Context) {
 		return
 	}
 
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{"success": true, "message": "Товар успешно обновлён", "data": input})
+		return
+	}
+
 	ctx.String(http.StatusOK, "Товар успешно обновлён")
 }
+
 func (h *Handler) DeleteHeaterProduct(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.Atoi(idParam)
@@ -180,8 +244,16 @@ func (h *Handler) DeleteHeaterProduct(ctx *gin.Context) {
 		return
 	}
 
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{"success": true, "message": "Товар успешно удалён"})
+		return
+	}
+
 	ctx.String(http.StatusOK, "Товар успешно удалён")
 }
+
+// ===================== Работа с изображениями =====================
+
 func (h *Handler) UploadHeaterImage(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.Atoi(idParam)
@@ -196,21 +268,27 @@ func (h *Handler) UploadHeaterImage(ctx *gin.Context) {
 		return
 	}
 
-	// Сохраняем файл в папку /resources/images/
 	dst := fmt.Sprintf("./resources/images/%s", file.Filename)
 	if err := ctx.SaveUploadedFile(file, dst); err != nil {
 		ctx.String(http.StatusInternalServerError, "Ошибка при сохранении файла: %v", err)
 		return
 	}
 
-	// Обновляем запись в БД
 	if err := h.Repository.UpdateHeaterProduct(uint(id), &ds.HeaterProduct{Image: "/static/images/" + file.Filename}); err != nil {
 		ctx.String(http.StatusInternalServerError, "Ошибка при обновлении карточки: %v", err)
 		return
 	}
 
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{"success": true, "message": "Изображение успешно загружено"})
+		return
+	}
+
 	ctx.String(http.StatusOK, "Изображение успешно загружено")
 }
+
+// ===================== Работа с заявками =====================
+
 func (h *Handler) UpdateHeatersProductRequest(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.Atoi(idParam)
@@ -230,8 +308,14 @@ func (h *Handler) UpdateHeatersProductRequest(ctx *gin.Context) {
 		return
 	}
 
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{"success": true, "message": "Заявка успешно обновлена", "data": input})
+		return
+	}
+
 	ctx.String(http.StatusOK, "Заявка успешно обновлена")
 }
+
 func (h *Handler) SubmitHeatersProductRequest(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.Atoi(idParam)
@@ -245,8 +329,14 @@ func (h *Handler) SubmitHeatersProductRequest(ctx *gin.Context) {
 		return
 	}
 
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{"success": true, "message": "Заявка успешно сформирована"})
+		return
+	}
+
 	ctx.String(http.StatusOK, "Заявка успешно сформирована")
 }
+
 func (h *Handler) ModerateHeatersProductRequest(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.Atoi(idParam)
@@ -255,7 +345,7 @@ func (h *Handler) ModerateHeatersProductRequest(ctx *gin.Context) {
 		return
 	}
 
-	status := ctx.Query("status") // ожидаем ?status=завершено или ?status=отклонено
+	status := ctx.Query("status")
 	if status != "завершено" && status != "отклонено" {
 		ctx.String(http.StatusBadRequest, "Неверный статус")
 		return
@@ -266,61 +356,16 @@ func (h *Handler) ModerateHeatersProductRequest(ctx *gin.Context) {
 		return
 	}
 
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{"success": true, "message": "Статус заявки успешно обновлён"})
+		return
+	}
+
 	ctx.String(http.StatusOK, "Статус заявки успешно обновлён")
 }
-func (h *Handler) RemoveProductFromRequest(ctx *gin.Context) {
-	requestParam := ctx.Query("request_id")
-	productParam := ctx.Query("product_id")
 
-	requestID, err := strconv.Atoi(requestParam)
-	if err != nil {
-		ctx.String(http.StatusBadRequest, "Неверный ID заявки")
-		return
-	}
+// ===================== Работа с пользователями =====================
 
-	productID, err := strconv.Atoi(productParam)
-	if err != nil {
-		ctx.String(http.StatusBadRequest, "Неверный ID товара")
-		return
-	}
-
-	if err := h.Repository.RemoveProductFromRequest(uint(requestID), uint(productID)); err != nil {
-		ctx.String(http.StatusInternalServerError, "Ошибка при удалении товара из заявки: %v", err)
-		return
-	}
-
-	ctx.String(http.StatusOK, "Товар успешно удалён из заявки")
-}
-func (h *Handler) UpdateRequestHeater(ctx *gin.Context) {
-	requestParam := ctx.Query("request_id")
-	productParam := ctx.Query("product_id")
-	areaParam := ctx.Query("area")
-
-	requestID, err := strconv.Atoi(requestParam)
-	if err != nil {
-		ctx.String(http.StatusBadRequest, "Неверный ID заявки")
-		return
-	}
-
-	productID, err := strconv.Atoi(productParam)
-	if err != nil {
-		ctx.String(http.StatusBadRequest, "Неверный ID товара")
-		return
-	}
-
-	area, err := strconv.ParseFloat(areaParam, 64)
-	if err != nil {
-		ctx.String(http.StatusBadRequest, "Неверное значение объёма")
-		return
-	}
-
-	if err := h.Repository.UpdateRequestHeater(uint(requestID), uint(productID), area); err != nil {
-		ctx.String(http.StatusInternalServerError, "Ошибка при обновлении товара в заявке: %v", err)
-		return
-	}
-
-	ctx.String(http.StatusOK, "Товар успешно обновлён в заявке")
-}
 func (h *Handler) RegisterUser(ctx *gin.Context) {
 	login := ctx.PostForm("login")
 	password := ctx.PostForm("password")
@@ -335,10 +380,16 @@ func (h *Handler) RegisterUser(ctx *gin.Context) {
 		return
 	}
 
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{"success": true, "message": "Пользователь успешно зарегистрирован"})
+		return
+	}
+
 	ctx.String(http.StatusOK, "Пользователь успешно зарегистрирован")
 }
+
 func (h *Handler) GetCurrentUser(ctx *gin.Context) {
-	userIDInterface, exists := ctx.Get("userID") // ожидаем, что middleware аутентификации установил userID
+	userIDInterface, exists := ctx.Get("userID")
 	if !exists {
 		ctx.String(http.StatusUnauthorized, "Пользователь не аутентифицирован")
 		return
@@ -356,12 +407,22 @@ func (h *Handler) GetCurrentUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"id":           user.ID,
-		"login":        user.Login,
-		"is_moderator": user.IsModerator,
-	})
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Данные пользователя",
+			"data": gin.H{
+				"id":           user.ID,
+				"login":        user.Login,
+				"is_moderator": user.IsModerator,
+			},
+		})
+		return
+	}
+
+	ctx.String(http.StatusOK, fmt.Sprintf("Пользователь: %s", user.Login))
 }
+
 func (h *Handler) UpdateCurrentUser(ctx *gin.Context) {
 	userIDInterface, exists := ctx.Get("userID")
 	if !exists {
@@ -386,8 +447,14 @@ func (h *Handler) UpdateCurrentUser(ctx *gin.Context) {
 		return
 	}
 
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{"success": true, "message": "Данные пользователя успешно обновлены"})
+		return
+	}
+
 	ctx.String(http.StatusOK, "Данные пользователя успешно обновлены")
 }
+
 func (h *Handler) LoginUser(ctx *gin.Context) {
 	login := ctx.PostForm("login")
 	password := ctx.PostForm("password")
@@ -403,22 +470,98 @@ func (h *Handler) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	// Простейший вариант: сохраняем ID пользователя в сессии (или в cookie)
 	ctx.Set("userID", user.ID)
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"id":           user.ID,
-		"login":        user.Login,
-		"is_moderator": user.IsModerator,
-	})
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Пользователь успешно вошёл",
+			"data": gin.H{
+				"id":           user.ID,
+				"login":        user.Login,
+				"is_moderator": user.IsModerator,
+			},
+		})
+		return
+	}
+
+	ctx.String(http.StatusOK, "Пользователь успешно вошёл")
 }
+
 func (h *Handler) LogoutUser(ctx *gin.Context) {
-	// Если используется сессия или cookie, очищаем её
-	// Простейший вариант: удаляем userID из контекста
 	ctx.Set("userID", nil)
 
-	// Если сессии через cookie:
-	// ctx.SetCookie("session_token", "", -1, "/", "", false, true)
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{"success": true, "message": "Пользователь успешно вышел"})
+		return
+	}
 
 	ctx.String(http.StatusOK, "Пользователь успешно вышел")
+}
+
+// Удаление товара из заявки
+func (h *Handler) RemoveProductFromRequest(ctx *gin.Context) {
+	requestParam := ctx.Query("request_id")
+	productParam := ctx.Query("product_id")
+
+	requestID, err := strconv.Atoi(requestParam)
+	if err != nil {
+		ctx.String(http.StatusBadRequest, "Неверный ID заявки")
+		return
+	}
+
+	productID, err := strconv.Atoi(productParam)
+	if err != nil {
+		ctx.String(http.StatusBadRequest, "Неверный ID товара")
+		return
+	}
+
+	if err := h.Repository.RemoveProductFromRequest(uint(requestID), uint(productID)); err != nil {
+		ctx.String(http.StatusInternalServerError, "Ошибка при удалении товара из заявки: %v", err)
+		return
+	}
+
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{"success": true, "message": "Товар успешно удалён из заявки"})
+		return
+	}
+
+	ctx.String(http.StatusOK, "Товар успешно удалён из заявки")
+}
+
+// Обновление товара в заявке (например, площадь)
+func (h *Handler) UpdateRequestHeater(ctx *gin.Context) {
+	requestParam := ctx.Query("request_id")
+	productParam := ctx.Query("product_id")
+	areaParam := ctx.Query("area")
+
+	requestID, err := strconv.Atoi(requestParam)
+	if err != nil {
+		ctx.String(http.StatusBadRequest, "Неверный ID заявки")
+		return
+	}
+
+	productID, err := strconv.Atoi(productParam)
+	if err != nil {
+		ctx.String(http.StatusBadRequest, "Неверный ID товара")
+		return
+	}
+
+	area, err := strconv.ParseFloat(areaParam, 64)
+	if err != nil {
+		ctx.String(http.StatusBadRequest, "Неверное значение площади")
+		return
+	}
+
+	if err := h.Repository.UpdateRequestHeater(uint(requestID), uint(productID), area); err != nil {
+		ctx.String(http.StatusInternalServerError, "Ошибка при обновлении товара в заявке: %v", err)
+		return
+	}
+
+	if wantsJSON(ctx) {
+		ctx.JSON(http.StatusOK, gin.H{"success": true, "message": "Товар успешно обновлён в заявке"})
+		return
+	}
+
+	ctx.String(http.StatusOK, "Товар успешно обновлён в заявке")
 }
