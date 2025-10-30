@@ -186,6 +186,38 @@ func (r *Repository) UpdateRequestHeater(requestID, productID uint, area float64
 		Where("heaters_product_request_id = ? AND heaters_product_id = ?", requestID, productID).
 		Update("area", area).Error
 }
+func (r *Repository) CalculateRequestCost(requestID uint) error {
+	var request ds.HeatersProductRequest
+	if err := r.db.Preload("RequestHeaters").First(&request, requestID).Error; err != nil {
+		log.Println("Ошибка при загрузке заявки:", err)
+		return err
+	}
+
+	if len(request.RequestHeaters) == 0 {
+		log.Println("В заявке нет товаров, расчёт cost невозможен")
+		return nil
+	}
+
+	totalArea := 0.0
+	for _, rh := range request.RequestHeaters {
+		totalArea += rh.Area
+	}
+
+	cost := 2160 * 0.2 * totalArea * 8.49 * (request.InsideTemperature - request.OutsideTemperature)
+	log.Printf("RequestID: %d, TotalArea: %.2f, Inside: %.2f, Outside: %.2f, Cost: %.2f",
+		request.ID, totalArea, request.InsideTemperature, request.OutsideTemperature, cost)
+
+	// Обновляем cost
+	if err := r.db.Model(&ds.HeatersProductRequest{}).
+		Where("id = ?", request.ID).
+		Update("cost", cost).Error; err != nil {
+		log.Println("Ошибка при обновлении cost:", err)
+		return err
+	}
+
+	return nil
+}
+
 func (r *Repository) CreateUser(login, password string, isModerator bool) error {
 	user := ds.User{
 		Login:       login,

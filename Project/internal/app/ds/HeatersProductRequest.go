@@ -14,6 +14,7 @@ type HeatersProductRequest struct {
 	OutsideTemperature float64   `gorm:"not null"`
 	InsideTemperature  float64   `gorm:"not null"`
 	CarrierVolume      float64   `gorm:"not null"`
+	Cost               float64   `gorm:"not null;default:0"` // новое поле
 	DeletedAt          *time.Time
 	RequestHeaters     []RequestHeater `gorm:"foreignKey:HeatersProductRequestID;references:ID"`
 }
