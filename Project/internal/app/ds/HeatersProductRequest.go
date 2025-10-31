@@ -7,6 +7,7 @@ import (
 type HeatersProductRequest struct {
 	ID                 uint      `gorm:"primaryKey"`
 	Status             string    `gorm:"not null"`
+	UserID             uint      // владелец заявки
 	CreatedAt          time.Time `gorm:"not null"`
 	UpdatedAt          time.Time `gorm:"not null"`
 	CreatorID          uint      `gorm:"not null"`

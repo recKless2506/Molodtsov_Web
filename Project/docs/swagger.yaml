@@ -1,0 +1,524 @@
+definitions:
+  api.pingResp:
+    properties:
+      status:
+        type: string
+    type: object
+  ds.HeaterProduct:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        type: string
+      description:
+        type: string
+      efficiency:
+        type: string
+      id:
+        type: integer
+      image:
+        type: string
+      isDelete:
+        type: boolean
+      power:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  ds.HeatersProductRequest:
+    properties:
+      carrierVolume:
+        type: number
+      cost:
+        description: новое поле
+        type: number
+      createdAt:
+        type: string
+      creatorID:
+        type: integer
+      deletedAt:
+        type: string
+      id:
+        type: integer
+      insideTemperature:
+        type: number
+      outsideTemperature:
+        type: number
+      placeSquare:
+        type: number
+      requestHeaters:
+        items:
+          $ref: '#/definitions/ds.RequestHeater'
+        type: array
+      status:
+        type: string
+      updatedAt:
+        type: string
+      userID:
+        description: владелец заявки
+        type: integer
+    type: object
+  ds.RequestHeater:
+    properties:
+      area:
+        format: float64
+        type: number
+      cost:
+        format: float64
+        type: number
+      deletedAt:
+        type: string
+      heaterProduct:
+        $ref: '#/definitions/ds.HeaterProduct'
+      heatersProductID:
+        type: integer
+      heatersProductRequestID:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /:
+    get:
+      description: Get list of heaters with cart count
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get catalog of heaters
+      tags:
+      - catalog
+  /add-to-cart/{id}:
+    post:
+      parameters:
+      - description: Heater ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "303":
+          description: Redirect
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Add heater to cart
+  /clear-cart:
+    post:
+      produces:
+      - application/json
+      responses:
+        "303":
+          description: Redirect
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Clear cart
+  /heater:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Heater Product
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/ds.HeaterProduct'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ds.HeaterProduct'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Add new heater product
+  /heater/{id}:
+    delete:
+      parameters:
+      - description: Heater ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Deleted
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete heater product (soft)
+    get:
+      parameters:
+      - description: Heater ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ds.HeaterProduct'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get heater by ID
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Heater ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Heater Product
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/ds.HeaterProduct'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ds.HeaterProduct'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update heater product
+  /heater/{id}/image:
+    post:
+      parameters:
+      - description: Heater ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Image file
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Uploaded
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Upload image for heater product
+  /heaters_application/{id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Request data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ds.HeatersProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ds.HeatersProductRequest'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update heater request
+  /heaters_application/moderate/{id}:
+    put:
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 'New status: завершено или отклонено'
+        in: query
+        name: status
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Status updated
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Moderate heater request (change status)
+  /heaters_application/product:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Request-Product update
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            ' area':
+              type: number
+            ' product_id':
+              type: integer
+            request_id:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update heater in request (area, cost will be recalculated)
+  /heaters_application/submit/{id}:
+    put:
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Submitted
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Submit heater request
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Авторизация по логину и паролю, возвращает JWT или session
+      parameters:
+      - description: Login credentials
+        in: body
+        name: login
+        required: true
+        schema:
+          properties:
+            login:
+              type: string
+            password:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Вход пользователя
+      tags:
+      - Users
+  /logout:
+    post:
+      description: Добавляет токен пользователя в blacklist
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - Users
+  /ping/{name}:
+    get:
+      description: very very friendly response
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.pingResp'
+      summary: Show hello text
+      tags:
+      - Tests
+  /register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User credentials
+        in: body
+        name: user
+        required: true
+        schema:
+          properties:
+            login:
+              type: string
+            password:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User registered
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register new user
+swagger: "2.0"

@@ -41,15 +41,16 @@ func (r *Repository) GetHeaterProductByID(id uint) (*ds.HeaterProduct, error) {
 	return &product, nil
 }
 
-func (r *Repository) GetAllRequests() ([]ds.HeatersProductRequest, error) {
+func (r *Repository) GetAllRequests(userID uint, isModerator bool) ([]ds.HeatersProductRequest, error) {
 	var requests []ds.HeatersProductRequest
+	query := r.db.Preload("RequestHeaters.HeaterProduct").Where("status != ?", "удален")
 
-	err := r.db.
-		Preload("RequestHeaters.HeaterProduct"). // загружаем товары внутри заявки
-		Where("status != ?", "удален").
-		Find(&requests).Error
+	if !isModerator {
+		// Если не модератор, показываем только заявки пользователя
+		query = query.Where("creator_id = ?", userID)
+	}
 
-	if err != nil {
+	if err := query.Find(&requests).Error; err != nil {
 		return nil, err
 	}
 	return requests, nil
@@ -247,4 +248,11 @@ func (r *Repository) AuthenticateUser(login, password string) (*ds.User, error) 
 		return nil, err
 	}
 	return &user, nil
+}
+func (r *Repository) GetHeatersProductRequestByID(id uint) (*ds.HeatersProductRequest, error) {
+	var request ds.HeatersProductRequest
+	if err := r.DB().First(&request, id).Error; err != nil {
+		return nil, err
+	}
+	return &request, nil
 }
