@@ -1,4 +1,3 @@
-// src/App.tsx
 import React, { useEffect, useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import HomePage from "./pages/HomePage";
@@ -14,12 +13,9 @@ const App: React.FC = () => {
   const [requests, setRequests] = useState<Request[]>([]);
 
   useEffect(() => {
-    // загрузка каталога при старте
     (async () => {
       try {
-        const data = await fetchCatalog();
-        // backend может возвращать шаблон HTML — предполагаем JSON { products: [...] } или массив
-        const prods = Array.isArray(data) ? data : data.products ?? [];
+        const prods = await fetchCatalog();
         setProducts(prods);
       } catch (e) {
         console.error("Failed to load catalog:", e);
@@ -28,9 +24,7 @@ const App: React.FC = () => {
   }, []);
 
   const onAddToCart = (product: HeaterProduct) => {
-    // простая локальная логика: увеличиваем счётчик
     setCartCount((s) => s + 1);
-    // можно послать POST /add-to-cart/:id, но сервер ожидает form POST (html). Покажу пример:
     fetch(`${import.meta.env.VITE_API_URL ?? "http://localhost:8001"}/add-to-cart/${product.ID}`, {
       method: "POST",
     }).catch((err) => console.warn("add-to-cart failed", err));
@@ -48,7 +42,13 @@ const App: React.FC = () => {
       <Route path="/" element={<HomePage cartCount={cartCount} />} />
       <Route
         path="/catalog"
-        element={<CatalogPage products={products} cartCount={cartCount} onAddToCart={onAddToCart} />}
+        element={
+          <CatalogPage
+            products={products}
+            cartCount={cartCount}
+            onAddToCart={onAddToCart}
+          />
+        }
       />
       <Route path="/heater/:id" element={<HeaterPage products={products} cartCount={cartCount} />} />
       <Route path="/heaters_application" element={<ApplicationPage requests={requests} clearCart={clearCart} />} />

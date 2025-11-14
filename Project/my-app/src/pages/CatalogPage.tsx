@@ -1,4 +1,3 @@
-// src/pages/CatalogPage.tsx
 import React from "react";
 import Header from "../components/Header";
 import ProductCard from "../components/ProductCard";
@@ -15,11 +14,20 @@ const CatalogPage: React.FC<Props> = ({ products, cartCount, onAddToCart }) => {
   return (
     <div>
       <Header cartCount={cartCount} />
+
       <div className="products">
-        {products && products.length ? (
-          products.map((p) => <ProductCard key={p.ID} product={p} onAddToCart={onAddToCart} />)
+        {products.length > 0 ? (
+          products.map((product) => (
+            <ProductCard
+              key={product.ID}
+              product={product}
+              onAddToCart={onAddToCart}
+            />
+          ))
         ) : (
-          <p style={{ textAlign: "center", width: "100%", marginTop: 40 }}>Товары не найдены.</p>
+          <p style={{ textAlign: "center", width: "100%", marginTop: 40 }}>
+            Товары не найдены.
+          </p>
         )}
       </div>
     </div>
