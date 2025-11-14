@@ -1,0 +1,14 @@
+/* src/pages/heater.css (твои стили) */
+.product-container {
+  display: flex;
+  max-width: 1243px;
+  margin: 50px auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+.product-image { width: 349px; padding-right: 20px; border-right: 1px solid #0567B7; }
+.product-image img { width: 100%; height: auto; }
+.product-content { flex: 1; padding-left: 20px; box-sizing: border-box; }
+.product-title { font-size: 36px; color: #0567B7; font-weight: 500; margin-bottom: 20px; }
+.spec-title { font-size: 24px; color: #0567B7; font-weight: 500; margin-top:30px; margin-bottom:10px; border-bottom:1px solid #0567B7; padding-bottom:5px; }
+.product-description, .spec-text { font-size:16px; color:#0567B7; line-height:1.5; white-space:pre-wrap; margin-top:10px; }

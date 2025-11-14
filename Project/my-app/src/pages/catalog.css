@@ -1,0 +1,11 @@
+/* src/pages/catalog.css (взял твои стили) */
+.products {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  justify-content: flex-start;
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+@media (max-width: 1200px) { .products { justify-content: center; gap: 20px; } }

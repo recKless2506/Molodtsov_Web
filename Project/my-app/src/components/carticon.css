@@ -1,0 +1,32 @@
+/* src/components/carticon.css */
+.cart-icon-wrapper {
+  display: flex;
+  align-items: center;
+}
+.cart-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+}
+.cart-icon svg {
+  width: 36px;
+  height: 36px;
+}
+.cart-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: red;
+  color: white;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
