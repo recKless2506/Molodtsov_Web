@@ -56,6 +56,9 @@ func StartServer(repo *repository.Repository) {
 	r.GET("/heater/:id", h.GetHeaterByID)
 
 	// ===================== Корзина =====================
+	r.GET("/cart", h.GetCart)
+	r.GET("/cart-icon", h.GetCartIcon)
+	r.PUT("/cart/update", h.UpdateCart)
 	r.POST("/clear-cart", h.ClearCart)
 	r.POST("/add-to-cart/:id", h.AddToCart)
 

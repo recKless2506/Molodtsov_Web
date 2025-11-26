@@ -80,10 +80,138 @@ func (h *Handler) GetHeaterByID(ctx *gin.Context) {
 
 // ===================== Корзина =====================
 
+// GetCart godoc
+// @Summary Get cart items
+// @Description Получить содержимое корзины (товары со статусом "черновик")
+// @Tags cart
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /cart [get]
+func (h *Handler) GetCart(ctx *gin.Context) {
+	items, err := h.Repository.GetCartItems()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Ошибка получения корзины",
+		})
+		return
+	}
+
+	count, _ := h.Repository.GetRequestsCount()
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Содержимое корзины",
+		"data": gin.H{
+			"cart_count": count,
+			"items":      items,
+		},
+	})
+}
+
+// UpdateCart godoc
+// @Summary Обновить данные корзины (поля заявки и объёмы по товарам)
+// @Tags cart
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /cart/update [put]
+func (h *Handler) UpdateCart(ctx *gin.Context) {
+	var input struct {
+		PlaceSquare        float64 `json:"place_square"`
+		OutsideTemperature float64 `json:"outside_temperature"`
+		InsideTemperature  float64 `json:"inside_temperature"`
+		Items              []struct {
+			RequestID uint    `json:"request_id"`
+			ProductID uint    `json:"product_id"`
+			Area      float64 `json:"area"`
+		} `json:"items"`
+	}
+
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Неверные данные для обновления корзины",
+		})
+		return
+	}
+
+	// Собираем уникальные ID заявок
+	requestIDs := make(map[uint]struct{})
+	for _, item := range input.Items {
+		requestIDs[item.RequestID] = struct{}{}
+	}
+
+	// Обновляем общие поля заявок (place_square, outside/inside_temperature)
+	for id := range requestIDs {
+		if err := h.Repository.DB().Model(&ds.HeatersProductRequest{}).
+			Where("id = ? AND status = ?", id, "черновик").
+			Updates(map[string]interface{}{
+				"place_square":        input.PlaceSquare,
+				"outside_temperature": input.OutsideTemperature,
+				"inside_temperature":  input.InsideTemperature,
+			}).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Ошибка при обновлении параметров заявки",
+			})
+			return
+		}
+	}
+
+	// Обновляем площадь (Area) по каждому товару в заявке
+	for _, item := range input.Items {
+		if err := h.Repository.UpdateRequestHeater(item.RequestID, item.ProductID, item.Area); err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Ошибка при обновлении товара в заявке",
+			})
+			return
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Корзина успешно обновлена",
+	})
+}
+
+// GetCartIcon godoc
+// @Summary Get cart icon with count
+// @Description Получить иконку корзины в формате SVG с количеством товаров
+// @Tags cart
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router /cart-icon [get]
+func (h *Handler) GetCartIcon(ctx *gin.Context) {
+	count, _ := h.Repository.GetRequestsCount()
+
+	// SVG иконка корзины
+	svgIcon := `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="9" cy="21" r="1" fill="currentColor"/>
+  <circle cx="20" cy="21" r="1" fill="currentColor"/>
+  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+</svg>`
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Иконка корзины",
+		"data": gin.H{
+			"cart_count": count,
+			"icon_svg":   svgIcon,
+			"method":     "GET",
+			"endpoint":   "/cart-icon",
+		},
+	})
+}
+
 // ClearCart godoc
 // @Summary Clear cart
 // @Produce json
-// @Success 303 {string} string "Redirect"
+// @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
 // @Router /clear-cart [post]
 func (h *Handler) ClearCart(ctx *gin.Context) {
@@ -91,34 +219,49 @@ func (h *Handler) ClearCart(ctx *gin.Context) {
 		Model(&ds.HeatersProductRequest{}).
 		Where("status = ?", "черновик").
 		Update("status", "удален").Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ошибка при очистке корзины"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Ошибка при очистке корзины",
+		})
 		return
 	}
 
-	ctx.Redirect(http.StatusSeeOther, "/")
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Корзина успешно очищена",
+	})
 }
 
 // AddToCart godoc
 // @Summary Add heater to cart
 // @Param id path int true "Heater ID"
 // @Produce json
-// @Success 303 {string} string "Redirect"
+// @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
 // @Router /add-to-cart/{id} [post]
 func (h *Handler) AddToCart(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Неверный ID товара"})
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Неверный ID товара",
+		})
 		return
 	}
 
 	if err := h.Repository.AddProductToCart(uint(id)); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Ошибка при добавлении товара"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Ошибка при добавлении товара",
+		})
 		return
 	}
 
-	ctx.Redirect(http.StatusSeeOther, "/catalog_heaters")
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Товар успешно добавлен в корзину",
+	})
 }
 
 // ===================== CRUD Товары =====================

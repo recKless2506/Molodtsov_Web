@@ -2,6 +2,7 @@ package repository
 
 import (
 	"Project/internal/app/ds"
+	"errors"
 	"fmt"
 	"log"
 
@@ -18,6 +19,17 @@ func NewRepository(dsn string) (*Repository, error) {
 	if err != nil {
 		return nil, fmt.Errorf("не удалось подключиться к БД: %w", err)
 	}
+
+	// Автоматические миграции, чтобы гарантировать наличие нужных таблиц
+	if err := db.AutoMigrate(
+		&ds.HeaterProduct{},
+		&ds.HeatersProductRequest{},
+		&ds.RequestHeater{},
+		&ds.User{},
+	); err != nil {
+		return nil, fmt.Errorf("не удалось выполнить миграции: %w", err)
+	}
+
 	return &Repository{db: db}, nil
 }
 
@@ -64,12 +76,26 @@ func (r *Repository) ClearRequests() error {
 
 func (r *Repository) GetRequestsCount() (int64, error) {
 	var count int64
-	if err := r.db.Model(&ds.HeatersProductRequest{}).
-		Where("status != ?", "удален").
+	// Считаем количество товаров в корзине:
+	// количество строк в request_heaters для заявок со статусом "черновик"
+	if err := r.db.Model(&ds.RequestHeater{}).
+		Joins("JOIN heaters_product_requests hpr ON hpr.id = request_heaters.heaters_product_request_id").
+		Where("hpr.status = ?", "черновик").
 		Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil
+}
+
+// GetCartItems возвращает товары в корзине (заявки со статусом "черновик")
+func (r *Repository) GetCartItems() ([]ds.HeatersProductRequest, error) {
+	var requests []ds.HeatersProductRequest
+	if err := r.db.Preload("RequestHeaters.HeaterProduct").
+		Where("status = ?", "черновик").
+		Find(&requests).Error; err != nil {
+		return nil, err
+	}
+	return requests, nil
 }
 
 // Новый метод поиска
@@ -94,25 +120,36 @@ func (r *Repository) AddProductToCart(productID uint) error {
 		return fmt.Errorf("товар с ID %d не найден: %w", productID, err)
 	}
 
-	//  Создаем заявку с статусом "черновик"
-	request := ds.HeatersProductRequest{
-		Status:             "черновик",
-		CreatorID:          1,
-		PlaceSquare:        0,
-		OutsideTemperature: 0,
-		InsideTemperature:  0,
-		CarrierVolume:      0,
-	}
+	// Ищем существующую заявку в статусе "черновик" (корзина) для пользователя (пока используем CreatorID = 1)
+	var request ds.HeatersProductRequest
+	err := r.db.Where("creator_id = ? AND status = ?", 1, "черновик").First(&request).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			//  Если черновика нет — создаём новую заявку
+			request = ds.HeatersProductRequest{
+				Status:             "черновик",
+				CreatorID:          1,
+				PlaceSquare:        0,
+				OutsideTemperature: 0,
+				InsideTemperature:  0,
+				CarrierVolume:      0,
+			}
 
-	if err := r.db.Create(&request).Error; err != nil {
-		log.Println("Ошибка создания заявки:", err)
-		return fmt.Errorf("не удалось создать заявку: %w", err)
-	}
+			if err := r.db.Create(&request).Error; err != nil {
+				log.Println("Ошибка создания заявки:", err)
+				return fmt.Errorf("не удалось создать заявку: %w", err)
+			}
 
-	log.Println("Создана заявка ID:", request.ID)
+			log.Println("Создана новая заявка ID:", request.ID)
 
-	if request.ID == 0 {
-		return fmt.Errorf("request.ID = 0 после создания заявки")
+			if request.ID == 0 {
+				return fmt.Errorf("request.ID = 0 после создания заявки")
+			}
+		} else {
+			return fmt.Errorf("ошибка при поиске черновика: %w", err)
+		}
+	} else {
+		log.Println("Найдена существующая заявка (черновик) ID:", request.ID)
 	}
 
 	// Создаем связь с товаром в request_heaters
